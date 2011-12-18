@@ -4,6 +4,7 @@ test-output
 .classpath
 .project
 .settings
+.scala_dependencies
 /.metadata
 .cache
 
