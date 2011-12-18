@@ -30,7 +30,7 @@ public class ExampleSwitchCase {
     }
     
     public void run4() {
-        String str;
+        String str = null;
         int i = hashCode();
         switch (i) {
         case 0: str = "0"; break;

@@ -1,5 +1,9 @@
 package com.mysema.scalagen
 
+/**
+ * @author tiwe
+ *
+ */
 class SourcePrinter {
 
   private var level = 0

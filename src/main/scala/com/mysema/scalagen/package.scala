@@ -1,8 +1,25 @@
 package com.mysema
 
 import japa.parser.ast.body.ModifierSet
+import _root_.scala.collection.JavaConversions
+import _root_.scala.collection.Set
 
 package object scalagen {
+  
+  @inline
+  def isEmpty(col: java.util.Collection[_]): Boolean = col == null || col.isEmpty
+
+  implicit def toJavaList[T](col: Seq[T]): java.util.List[T] = JavaConversions.asJavaList(col) 
+  
+  implicit def toJavaSet[T](col: Set[T]): java.util.Set[T] = JavaConversions.asJavaSet(col)
+      
+  implicit def toScalaSeq[T](col: java.util.List[T]): Seq[T] = {
+    if (col != null) JavaConversions.asBuffer(col) else List[T]() 
+  }
+  
+  implicit def toScalaSet[T](col: java.util.Set[T]): Set[T] = {
+    if (col != null) JavaConversions.asScalaSet(col) else Set[T]()
+  }
   
   implicit def toRichModifiers(i: Int) = new RichModifiers(i)
   

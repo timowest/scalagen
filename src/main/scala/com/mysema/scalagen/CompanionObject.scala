@@ -14,8 +14,11 @@ import japa.parser.ast.expr.NameExpr
 import java.util.ArrayList
 import java.util.HashMap
 import java.util.Map
-import scala.collection.JavaConversions._
 
+/**
+ * @author tiwe
+ *
+ */
 object CompanionObject extends UnitTransformer {
 
   def transform(cu: CompilationUnit): CompilationUnit = {
@@ -39,13 +42,13 @@ object CompanionObject extends UnitTransformer {
         if (entry.getKey.getMembers.isEmpty()) {
           cu.getTypes.remove(entry.getKey)
         } else if (entry.getKey.getMembers.size == 1) {
-          var member = entry.getKey.getMembers.get(0)
-          if (member.isInstanceOf[ConstructorDeclaration]) {
-            var constr = member.asInstanceOf[ConstructorDeclaration]
-            if (constr.getModifiers.isPrivate 
-                && (constr.getParameters == null || constr.getParameters.size == 0)) {
-              cu.getTypes.remove(entry.getKey)
+          entry.getKey.getMembers.get(0) match {
+            case c: ConstructorDeclaration => {
+              if (c.getModifiers.isPrivate && isEmpty(c.getParameters)) {
+                cu.getTypes.remove(entry.getKey)
+              } 
             }
+            case _ => 
           }
         }
 

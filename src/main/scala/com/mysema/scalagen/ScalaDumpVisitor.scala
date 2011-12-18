@@ -10,7 +10,6 @@ import java.util.ArrayList
 import java.util.Iterator
 import java.util.List
 import org.apache.commons.lang3.StringUtils
-import scala.collection.JavaConversions._
 
 object ScalaDumpVisitor {
   
@@ -24,10 +23,13 @@ class Context {
   var skip: Boolean = _
 }
 
+/**
+ * @author tiwe
+ *
+ */
 class ScalaDumpVisitor extends VoidVisitor[Context] {
   import ScalaDumpVisitor._
-  
-  
+    
   private val printer = new SourcePrinter()
 
   def getSource: String = {
@@ -234,8 +236,12 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
     printer.print(n.getName)
     printTypeParameters(n.getTypeParameters, arg)
     var constr = getFirstConstructor(n.getMembers)
+    var superInvocation: Option[ExplicitConstructorInvocationStmt] = None
     if (constr != null) {
       printConstructor(constr, arg, true)
+      superInvocation = constr.getBlock.getStmts
+        .collect({ case x: ExplicitConstructorInvocationStmt => x })
+        .filter(!_.isThis).headOption
     }
     var superTypes = new ArrayList[ClassOrInterfaceType]()
     if (n.getExtends != null) {
@@ -247,12 +253,14 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
     if (!superTypes.isEmpty) {
       printer.print(" extends ")
       var i = superTypes.iterator()
+      i.next().accept(this, arg)
+      superInvocation.foreach { s => 
+        constr.getBlock.getStmts.remove(s)
+        printArguments(s.getArgs, arg)
+      }
       while (i.hasNext) {
-        var c = i.next()
-        c.accept(this, arg)
-        if (i.hasNext) {
-          printer.print(" with ")
-        }
+        printer.print(" with ")
+        i.next().accept(this, arg)        
       }
     }
     printer.printLn(" {")
@@ -271,7 +279,7 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
     var i = members.iterator()
     while (i.hasNext) {
       var member = i.next()
-      if (member.isInstanceOf[ ConstructorDeclaration]) {
+      if (member.isInstanceOf[ConstructorDeclaration]) {
         i.remove()
         return member.asInstanceOf[ConstructorDeclaration]
       }
@@ -516,7 +524,7 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
 
   def visit(n: InstanceOfExpr, arg: Context) {
     n.getExpr.accept(this, arg)
-    printer.print(".isInstanceOf[ ")
+    printer.print(".isInstanceOf[")
     n.getType.accept(this, arg)
     printer.print("]")
   }
@@ -699,12 +707,12 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
       }
     }
     printer.print(")")
-    if (!(n.getType.isInstanceOf[ VoidType]) || n.getBody == null) {
+    if (!(n.getType.isInstanceOf[VoidType]) || n.getBody == null) {
       printer.print(": ")
       n.getType.accept(this, arg)
     }
     if (n.getBody != null) {
-      if (!(n.getType.isInstanceOf[ VoidType])) {
+      if (!(n.getType.isInstanceOf[VoidType])) {
         printer.print(" = ")
         if (n.getBody.getStmts.size == 1) {
           val str = print(n.getBody.getStmts.get(0), arg)

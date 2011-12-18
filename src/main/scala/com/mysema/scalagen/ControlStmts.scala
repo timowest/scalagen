@@ -7,6 +7,10 @@ import japa.parser.ast.expr._
 import japa.parser.ast.visitor._
 import java.util.{ ArrayList, Collections }
 
+/**
+ * @author tiwe
+ *
+ */
 object ControlStmts extends ModifierVisitorAdapter[Context] with UnitTransformer {
   
   def transform(cu: CompilationUnit): CompilationUnit = {

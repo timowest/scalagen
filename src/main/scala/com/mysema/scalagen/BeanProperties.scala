@@ -18,8 +18,11 @@ import java.util.ArrayList
 import java.util.HashMap
 import java.util.Map
 import com.mysema.scala.BeanUtils
-import scala.collection.JavaConversions._
 
+/**
+ * @author tiwe
+ *
+ */
 object BeanProperties extends UnitTransformer {
 
   private val BEAN_PROPERTY_IMPORT = new ImportDeclaration(new NameExpr("scala.reflect.BeanProperty"), false, false)
@@ -48,19 +51,17 @@ object BeanProperties extends UnitTransformer {
       } else if (member.isInstanceOf[ MethodDeclaration]) {
         var method = member.asInstanceOf[MethodDeclaration]
         if (method.getName.startsWith("get") 
-            && !method.getModifiers.isPrivate 
-            && (method.getParameters == null || method.getParameters.isEmpty) 
+            && !method.getModifiers.isPrivate && isEmpty(method.getParameters) 
             && !(method.getType.isInstanceOf[VoidType])) {
           getters.put(BeanUtils.uncapitalize(method.getName.substring(3)), method)
         } else if (method.getName.startsWith("is") 
-            && !method.getModifiers.isPrivate 
-            && (method.getParameters == null || method.getParameters.isEmpty) 
+            && !method.getModifiers.isPrivate && isEmpty(method.getParameters) 
             && method.getType.isInstanceOf[PrimitiveType] 
             && (method.getType.asInstanceOf[PrimitiveType]).getType == Primitive.Boolean) {
           getters.put(BeanUtils.uncapitalize(method.getName.substring(2)), method)
         } else if (method.getName.startsWith("set") 
             && (method.getParameters != null && method.getParameters.size == 1) 
-            && method.getType.isInstanceOf[ VoidType]) {
+            && method.getType.isInstanceOf[VoidType]) {
           setters.put(BeanUtils.uncapitalize(method.getName.substring(3)), method)
         }
       }

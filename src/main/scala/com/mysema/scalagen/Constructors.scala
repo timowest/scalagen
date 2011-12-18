@@ -3,8 +3,11 @@ package com.mysema.scalagen
 import japa.parser.ast.CompilationUnit
 import japa.parser.ast.body._
 import japa.parser.ast.stmt._
-import scala.collection.JavaConversions._
 
+/**
+ * @author tiwe
+ *
+ */
 object Constructors extends UnitTransformer {
 
   def transform(cu: CompilationUnit): CompilationUnit = {
@@ -14,24 +17,25 @@ object Constructors extends UnitTransformer {
     cu
   }
 
+  private def isThisConstructorInvocation(s: Statement): Boolean = {
+    s.isInstanceOf[ExplicitConstructorInvocationStmt] && s.asInstanceOf[ExplicitConstructorInvocationStmt].isThis
+  }
+  
   private def transform(cu: CompilationUnit, t: TypeDeclaration) {
     if (t.getMembers == null) {
       return
     }
     
     // get all constructors
-    val constr = t.getMembers()
-      .filter(_.isInstanceOf[ConstructorDeclaration])
-      .map(_.asInstanceOf[ConstructorDeclaration])
+    val constr = t.getMembers.collect { case c: ConstructorDeclaration => c }
       
     if (!constr.isEmpty) {
       
       // get first without delegating
-      val first = constr.find( c =>
-        c.getBlock.getStmts == null || (!c.getBlock.getStmts.isEmpty &&
-        !c.getBlock.getStmts.get(0).isInstanceOf[ExplicitConstructorInvocationStmt]))        
+      val first = constr.find( c => 
+        isEmpty(c.getBlock.getStmts) || !isThisConstructorInvocation(c.getBlock.getStmts.get(0)))
     
-      // move to first
+      // move in front of others
       first.filter(_ != constr(0)).foreach { c =>
         t.getMembers.remove(c)
         t.getMembers.add(t.getMembers.indexOf(constr(0)), c)
@@ -39,7 +43,7 @@ object Constructors extends UnitTransformer {
         
       // copy initializer
       val c = first.getOrElse(constr(0))  
-      if (c.getBlock.getStmts != null && !c.getBlock.getStmts.isEmpty) {
+      if (!isEmpty(c.getBlock.getStmts)) {
         var initializer = new InitializerDeclaration(false, c.getBlock)
         t.getMembers.add(t.getMembers.indexOf(c), initializer)
       }    

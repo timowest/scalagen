@@ -7,7 +7,6 @@ import japa.parser.ast.body.BodyDeclaration
 import japa.parser.ast.body.FieldDeclaration
 import java.io.FileNotFoundException
 import org.junit.Test
-import scala.collection.JavaConversions._
 
 class BeanPropertiesTest extends AbstractParserTest {
 

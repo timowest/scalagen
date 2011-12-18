@@ -54,6 +54,13 @@ class SerializationTest extends AbstractParserTest {
   }
   
   @Test
+  def ExampleSuperConstructors {
+    val sources = toScala[ExampleSuperConstructors]
+    assertContains(sources, 
+      "class ExampleSuperConstructors(first: String, last: String) extends SuperClass(first) {")
+  }
+  
+  @Test
   def ExampleSwitchCase {
     val sources = toScala[ExampleSwitchCase]
     assertContains(sources, 
