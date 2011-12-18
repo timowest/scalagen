@@ -764,11 +764,12 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
       var v = i.next()
       printAnnotations(n.getAnnotations, arg)
       printer.print(modifier)
-      if (v.getInit == null) {
+      if (v.getInit == null || v.getInit.isInstanceOf[NullLiteralExpr]){
         v.getId.accept(this, arg)
         printer.print(": ")
         n.getType.accept(this, arg)
-        printer.print(" = _ ")
+        printer.print(" = ")
+        printer.print(if (v.getInit() == null) "_" else "null")
       } else {
         v.accept(this, arg)
       }
