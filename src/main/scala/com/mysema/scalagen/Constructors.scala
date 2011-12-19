@@ -9,7 +9,9 @@ import japa.parser.ast.stmt._
  *
  */
 object Constructors extends UnitTransformer {
-
+  
+ type ConstructorInvocation = ExplicitConstructorInvocationStmt
+  
   def transform(cu: CompilationUnit): CompilationUnit = {
     if (cu.getTypes != null) {
       cu.getTypes.foreach { transform(cu,_) }      
@@ -18,7 +20,8 @@ object Constructors extends UnitTransformer {
   }
 
   private def isThisConstructorInvocation(s: Statement): Boolean = {
-    s.isInstanceOf[ExplicitConstructorInvocationStmt] && s.asInstanceOf[ExplicitConstructorInvocationStmt].isThis
+    s.isInstanceOf[ConstructorInvocation] && 
+    s.asInstanceOf[ConstructorInvocation].isThis
   }
   
   private def transform(cu: CompilationUnit, t: TypeDeclaration) {
@@ -41,9 +44,9 @@ object Constructors extends UnitTransformer {
         t.getMembers.add(t.getMembers.indexOf(constr(0)), c)
       }   
         
-      // copy initializer
+      // copy initializer, if constructor block has non-constructor statements
       val c = first.getOrElse(constr(0))  
-      if (!isEmpty(c.getBlock.getStmts)) {
+      if (!isEmpty(c.getBlock.getStmts) && !c.getBlock.getStmts.filter(!_.isInstanceOf[ConstructorInvocation]).isEmpty) {
         var initializer = new InitializerDeclaration(false, c.getBlock)
         t.getMembers.add(t.getMembers.indexOf(c), initializer)
       }    

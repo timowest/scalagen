@@ -22,44 +22,44 @@ import java.util.Map
 object CompanionObject extends UnitTransformer {
 
   def transform(cu: CompilationUnit): CompilationUnit = {
-    var typeToCompanion = new HashMap[TypeDeclaration, TypeDeclaration]()
-    
-    if (cu.getTypes != null) {
-      for (t <- cu.getTypes) {
-        var companion = withCompanionObject(cu, t)
-        if (companion != null) {
-          typeToCompanion.put(t, companion)
-        }
-      }
+    if (cu.getTypes == null) {
+      return cu
+    }
+        
+    val typeToCompanion = cu.getTypes.map(t => (t, withCompanionObject(cu,t)))
+      .filter(_._2 != null)
+      .toMap
       
-      if (!typeToCompanion.isEmpty() && cu.getImports == null) {
-        cu.setImports(new ArrayList[ImportDeclaration]())
-      }
+    if (!typeToCompanion.isEmpty && cu.getImports == null) {
+      cu.setImports(new ArrayList[ImportDeclaration]())
+    }
       
-      // remove classes
-      for (entry <- typeToCompanion.entrySet()) {
-        cu.getTypes.add(cu.getTypes.indexOf(entry.getKey), entry.getValue)
-        if (entry.getKey.getMembers.isEmpty()) {
-          cu.getTypes.remove(entry.getKey)
-        } else if (entry.getKey.getMembers.size == 1) {
-          entry.getKey.getMembers.get(0) match {
-            case c: ConstructorDeclaration => {
-              if (c.getModifiers.isPrivate && isEmpty(c.getParameters)) {
-                cu.getTypes.remove(entry.getKey)
-              } 
-            }
-            case _ => 
-          }
+    for ( (clazz,companion) <- typeToCompanion) {
+      handleClassAndCompanion(cu, clazz, companion)
+    }    
+    cu
+  }
+  
+  private def handleClassAndCompanion(cu: CompilationUnit, clazz: TypeDeclaration, companion: TypeDeclaration) {
+    cu.getTypes.add(cu.getTypes.indexOf(clazz), companion)
+    if (clazz.getMembers.isEmpty()) {
+      cu.getTypes.remove(clazz)
+    } else if (clazz.getMembers.size == 1) {
+      clazz.getMembers.get(0) match {
+        case c: ConstructorDeclaration => {
+          if (c.getModifiers.isPrivate && isEmpty(c.getParameters)) {
+            cu.getTypes.remove(clazz)
+          } 
         }
-
-        // add import for companion object members, if class has not been removed
-        if (cu.getTypes.contains(entry.getKey)) {
-          var importDecl = new ImportDeclaration(new NameExpr(entry.getKey.getName), false, true)
-          cu.getImports.add(importDecl)
-        }
+        case _ => 
       }
     }
-    cu
+
+    // add import for companion object members, if class has not been removed
+    if (cu.getTypes.contains(clazz)) {
+      var importDecl = new ImportDeclaration(new NameExpr(clazz.getName), false, true)
+      cu.getImports.add(importDecl)
+    }
   }
 
   private def withCompanionObject(cu: CompilationUnit, t: TypeDeclaration): TypeDeclaration = {

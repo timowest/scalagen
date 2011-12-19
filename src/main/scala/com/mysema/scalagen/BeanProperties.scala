@@ -15,8 +15,6 @@ import japa.parser.ast.`type`.PrimitiveType
 import japa.parser.ast.`type`.PrimitiveType.Primitive
 import japa.parser.ast.`type`.VoidType
 import java.util.ArrayList
-import java.util.HashMap
-import java.util.Map
 import com.mysema.scala.BeanUtils
 
 /**
@@ -25,6 +23,8 @@ import com.mysema.scala.BeanUtils
  */
 object BeanProperties extends UnitTransformer {
 
+  // TODO : simplify
+  
   private val BEAN_PROPERTY_IMPORT = new ImportDeclaration(new NameExpr("scala.reflect.BeanProperty"), false, false)
 
   private val BEAN_PROPERTY = new MarkerAnnotationExpr(new NameExpr("BeanProperty"))
@@ -35,61 +35,63 @@ object BeanProperties extends UnitTransformer {
     }
     cu
   }
+  
+  private def isGetter(method: MethodDeclaration): Boolean = {
+    method.getName.startsWith("get") && !method.getModifiers.isPrivate && 
+    isEmpty(method.getParameters) && 
+    !(method.getType.isInstanceOf[VoidType])
+  }
+  
+  private def isBooleanGetter(method: MethodDeclaration): Boolean = {
+    method.getName.startsWith("is") && !method.getModifiers.isPrivate && 
+    isEmpty(method.getParameters) && 
+    method.getType.isInstanceOf[PrimitiveType] && 
+    (method.getType.asInstanceOf[PrimitiveType]).getType == Primitive.Boolean
+  }
+  
+  private def isSetter(method: MethodDeclaration): Boolean = {
+    method.getName.startsWith("set") && 
+    (method.getParameters != null && method.getParameters.size == 1) && 
+    method.getType.isInstanceOf[VoidType]
+  }
 
   private def transform(cu: CompilationUnit, t: TypeDeclaration) {
     if (t.getMembers == null) {
       return 
     }
-    var fields = new HashMap[String, FieldDeclaration]()
-    var getters = new HashMap[String, MethodDeclaration]()
-    var setters = new HashMap[String, MethodDeclaration]()
-    
-    for (member <- t.getMembers) {
-      if (member.isInstanceOf[ FieldDeclaration]) {
-        var field = member.asInstanceOf[FieldDeclaration]
-        field.getVariables.foreach { v => fields.put(v.getId.getName, field) }        
-      } else if (member.isInstanceOf[ MethodDeclaration]) {
-        var method = member.asInstanceOf[MethodDeclaration]
-        if (method.getName.startsWith("get") 
-            && !method.getModifiers.isPrivate && isEmpty(method.getParameters) 
-            && !(method.getType.isInstanceOf[VoidType])) {
-          getters.put(BeanUtils.uncapitalize(method.getName.substring(3)), method)
-        } else if (method.getName.startsWith("is") 
-            && !method.getModifiers.isPrivate && isEmpty(method.getParameters) 
-            && method.getType.isInstanceOf[PrimitiveType] 
-            && (method.getType.asInstanceOf[PrimitiveType]).getType == Primitive.Boolean) {
-          getters.put(BeanUtils.uncapitalize(method.getName.substring(2)), method)
-        } else if (method.getName.startsWith("set") 
-            && (method.getParameters != null && method.getParameters.size == 1) 
-            && method.getType.isInstanceOf[VoidType]) {
-          setters.put(BeanUtils.uncapitalize(method.getName.substring(3)), method)
-        }
+        
+    // accessors
+    val methods = t.getMembers.collect { case m: MethodDeclaration => m }
+    val getters = methods.filter(m => isGetter(m) || isBooleanGetter(m))
+      .map(m => (BeanUtils.uncapitalize(m.getName.substring(if (isGetter(m)) 3 else 2)),m)).toMap      
+    val setters = methods.filter(m => isSetter(m))
+      .map(m => (BeanUtils.uncapitalize(m.getName.substring(3)), m)).toMap
+   
+    // fields with accessors
+    val fields = t.getMembers.collect { case f: FieldDeclaration => f }
+      .filter(_.getModifiers.isPrivate)
+      .flatMap( f => f.getVariables.map( v => (v.getId.getName,f) ))
+      .filter { case (field,f) =>  getters.contains(field) }
+      .toMap
+          
+    // remove accessors 
+    for ( (name,field) <- fields) {
+      var getter = getters(name)
+      t.getMembers.remove(getter)
+      setters.get(name).foreach { t.getMembers.remove(_) }
+
+      // make field public
+      field.setModifiers(field.getModifiers.removeModifier(ModifierSet.PRIVATE))
+      if (field.getAnnotations == null) {
+        field.setAnnotations(new ArrayList[AnnotationExpr]())
+      }
+      if (!field.getAnnotations.contains(BEAN_PROPERTY)) {
+        field.getAnnotations.add(BEAN_PROPERTY)
       }
     }
     
-    var foundProperties = false    
-    for (entry <- fields.entrySet()) {
-      var field = entry.getValue
-      var getter = getters.get(entry.getKey)
-      if (getter != null) {
-        foundProperties = true
-        t.getMembers.remove(getter)
-        var setter = setters.get(entry.getKey)
-        if (setter != null) {
-          t.getMembers.remove(setter)
-        }
-        field.setModifiers(field.getModifiers.removeModifier(ModifierSet.PRIVATE))
-        if (field.getAnnotations == null) {
-          field.setAnnotations(new ArrayList[AnnotationExpr]())
-        }
-        if (!field.getAnnotations.contains(BEAN_PROPERTY)) {
-          field.getAnnotations.add(BEAN_PROPERTY)
-        }
-      }
-    }
-    
-    // add BeanProperty imports, if properties have been found
-    if (foundProperties) {
+    // add BeanProperty import, if properties have been found
+    if (!fields.isEmpty) {
       if (cu.getImports == null) {
         cu.setImports(new ArrayList[ImportDeclaration]())
       }

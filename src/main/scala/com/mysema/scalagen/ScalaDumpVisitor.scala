@@ -223,6 +223,7 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
   }
 
   def visit(n: ClassOrInterfaceDeclaration, arg: Context) {
+    // TODO : simplify
     printJavadoc(n.getJavaDoc, arg)
     printMemberAnnotations(n.getAnnotations, arg)
     printModifiers(n.getModifiers)
@@ -945,10 +946,13 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
 
   def visit(n: InitializerDeclaration, arg: Context) {
     if (n.getBlock.getStmts != null) {
-      for (stmt <- n.getBlock.getStmts) {
-        stmt.accept(this, arg)
-        printer.printLn()
-        printer.printLn()
+      val i = n.getBlock.getStmts.iterator
+      while (i.hasNext) {
+        i.next.accept(this, arg)
+        if (i.hasNext) {
+          printer.printLn()
+          printer.printLn()
+        }
       }
     }
   }
