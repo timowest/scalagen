@@ -22,12 +22,10 @@ import com.mysema.scala.BeanUtils
  *
  */
 object BeanProperties extends UnitTransformer {
-
-  // TODO : simplify
   
-  private val BEAN_PROPERTY_IMPORT = new ImportDeclaration(new NameExpr("scala.reflect.BeanProperty"), false, false)
+  val BEAN_PROPERTY_IMPORT = new ImportDeclaration(new NameExpr("scala.reflect.BeanProperty"), false, false)
 
-  private val BEAN_PROPERTY = new MarkerAnnotationExpr(new NameExpr("BeanProperty"))
+  val BEAN_PROPERTY = new MarkerAnnotationExpr(new NameExpr("BeanProperty"))
 
   def transform(cu: CompilationUnit): CompilationUnit = {
     if (cu.getTypes != null) {

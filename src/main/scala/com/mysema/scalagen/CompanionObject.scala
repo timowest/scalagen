@@ -26,7 +26,7 @@ object CompanionObject extends UnitTransformer {
       return cu
     }
         
-    val typeToCompanion = cu.getTypes.map(t => (t, withCompanionObject(cu,t)))
+    val typeToCompanion = cu.getTypes.map(t => (t, getCompanionObject(cu,t)))
       .filter(_._2 != null)
       .toMap
       
@@ -40,7 +40,8 @@ object CompanionObject extends UnitTransformer {
     cu
   }
   
-  private def handleClassAndCompanion(cu: CompilationUnit, clazz: TypeDeclaration, companion: TypeDeclaration) {
+  private def handleClassAndCompanion(cu: CompilationUnit, clazz: TypeDeclaration, 
+      companion: TypeDeclaration) {
     cu.getTypes.add(cu.getTypes.indexOf(clazz), companion)
     if (clazz.getMembers.isEmpty()) {
       cu.getTypes.remove(clazz)
@@ -62,7 +63,7 @@ object CompanionObject extends UnitTransformer {
     }
   }
 
-  private def withCompanionObject(cu: CompilationUnit, t: TypeDeclaration): TypeDeclaration = {
+  private def getCompanionObject(cu: CompilationUnit, t: TypeDeclaration): TypeDeclaration = {
     if (t.getMembers == null) {
       return null
     }

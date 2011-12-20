@@ -13,6 +13,8 @@ import org.apache.commons.lang3.StringUtils
 
 object ScalaDumpVisitor {
   
+  private val SKIPPED_ANNOTATIONS = Set("Override","SuppressWarnings","Nullable")
+  
   private val SHORT_FORM = Set("query","eq","ne","lt","until","gt","size","hasNext","toString","hashCode")
   
   private val RESERVED = Set("object","val","var","type")
@@ -90,11 +92,11 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
     var hasOverride = false
     if (annotations != null) {
       for (a <- annotations) {
-        if (!a.getName.getName.equals("Override")) {
+        if (!SKIPPED_ANNOTATIONS.contains(a.getName.getName)) {
           a.accept(this, arg)
           printer.printLn()
         } else {
-          hasOverride = true
+          hasOverride |= a.getName.getName == "Override"
         }
       }
     }
@@ -735,6 +737,10 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
   def visit(n: Parameter, arg: Context) {
     printAnnotations(n.getAnnotations, arg)
     printModifiers(n.getModifiers)
+    if (!isEmpty(n.getAnnotations) && 
+       n.getAnnotations.contains(BeanProperties.BEAN_PROPERTY)) {
+       printer.print(if (n.getModifiers.isFinal) "val " else "var ")
+    }    
     n.getId.accept(this, arg)
     printer.print(": ")
     n.getType.accept(this, arg)
@@ -1120,9 +1126,6 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
   }
 
   def visit(n: SingleMemberAnnotationExpr, arg: Context) {
-    if (n.getName.getName.equals("SuppressWarnings")) {
-      return
-    }
     printer.print("@")
     n.getName.accept(this, arg)
     printer.print("(")
@@ -1131,9 +1134,6 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
   }
 
   def visit(n: NormalAnnotationExpr, arg: Context) {
-    if (n.getName.getName.equals("SuppressWarnings")) {
-      return
-    }
     printer.print("@")
     n.getName.accept(this, arg)
     printer.print("(")

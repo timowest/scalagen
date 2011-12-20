@@ -2,6 +2,12 @@ package com.mysema.scalagen;
 
 public class ExampleBean2 {
 
+    public static void main(String[] args) {
+        ExampleBean2 bean = new ExampleBean2();
+        bean.setFirstName("John");
+        System.out.println(bean.getFirstName());
+    }
+    
     private int age;
     
     private String firstName;

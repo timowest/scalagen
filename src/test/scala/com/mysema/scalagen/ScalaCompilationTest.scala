@@ -16,8 +16,7 @@ class ScalaCompilationTest extends AbstractParserTest with CompileTestUtils {
     val failures = Map.newBuilder[String,String]
     
     resources.filter(_.getName.endsWith(".java")).foreach { f =>
-      var in = new FileInputStream(f)
-      var unit = JavaParser.parse(in)
+      var unit = JavaParser.parse(new FileInputStream(f))
       val source = toScala(unit)      
       try {
         assertCompileSuccess(source)

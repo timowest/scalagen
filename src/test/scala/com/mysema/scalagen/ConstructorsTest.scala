@@ -19,8 +19,8 @@ class ConstructorsTest extends AbstractParserTest {
   @Test
   def Body_Is_Extracted() {
     var unit = getCompilationUnit(classOf[ExampleImmutable])
-    assertEquals(5, unit.getTypes.get(0).getMembers.size)
-    unit = Constructors.transform(unit)
     assertEquals(6, unit.getTypes.get(0).getMembers.size)
+    unit = Constructors.transform(unit)
+    assertEquals(5, unit.getTypes.get(0).getMembers.size)
   }
 }
