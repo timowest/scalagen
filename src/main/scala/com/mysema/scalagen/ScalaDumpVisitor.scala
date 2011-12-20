@@ -999,6 +999,8 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
   }
 
   def visit(n: ForeachStmt, arg: Context) {
+    // TODO : handle also if 
+    // e.g. for (i <- List.range(from, to) if i % 2 == 0) yield i
     printer.print("for (")
     n.getVariable.getVars.get(0).accept(this, arg)
     printer.print(" <- ")
