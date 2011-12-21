@@ -391,9 +391,8 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
   }
 
   def visit(n: ArrayInitializerExpr, arg: Context) {
-    printer.print("{")
+    printer.print("(")
     if (n.getValues != null) {
-      printer.print(" ")
       var i = n.getValues.iterator()
       while (i.hasNext) {
         i.next().accept(this, arg)
@@ -401,9 +400,8 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
           printer.print(", ")
         }
       }
-      printer.print(" ")
     }
-    printer.print("}")
+    printer.print(")")
   }
 
   def visit(n: VoidType, arg: Context) {
@@ -419,25 +417,22 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
 
   def visit(n: ArrayCreationExpr, arg: Context) {
     printer.print("new ")
+    for (i <- 0 until n.getArrayCount) {
+      printer.print("Array[")
+    }
     n.getType.accept(this, arg)
+    for (i <- 0 until n.getArrayCount) {
+      printer.print("]")
+    }
     if (n.getDimensions != null) {
-      for (dim <- n.getDimensions) {
-        printer.print("[")
-        dim.accept(this, arg)
-        printer.print("]")
-      }
-      for (i <- 0 until n.getArrayCount) {
-        printer.print("[]")
-      }
+      printer.print("(")
+      printer.print(n.getDimensions.map(print(_,arg)).mkString(", "))
+      printer.print(")")      
     } else {
-      for (i <- 0 until n.getArrayCount) {
-        printer.print("[]")
-      }
-      printer.print(" ")
       n.getInitializer.accept(this, arg)
     }
   }
-
+  
   def visit(n: AssignExpr, arg: Context) {
     n.getTarget.accept(this, arg)
     printer.print(" ")
@@ -738,14 +733,14 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
     printAnnotations(n.getAnnotations, arg)
     printModifiers(n.getModifiers)
     if (!isEmpty(n.getAnnotations) && 
-       n.getAnnotations.contains(BeanProperties.BEAN_PROPERTY)) {
+       n.getAnnotations.contains(UnitTransformer.BEAN_PROPERTY)) {
        printer.print(if (n.getModifiers.isFinal) "val " else "var ")
     }    
     n.getId.accept(this, arg)
     printer.print(": ")
     n.getType.accept(this, arg)
     if (n.isVarArgs) {
-      printer.print("_")
+      printer.print("*")
     }
   }
 

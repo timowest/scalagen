@@ -21,6 +21,14 @@ class ConstructorsTest extends AbstractParserTest {
     var unit = getCompilationUnit(classOf[ExampleImmutable])
     assertEquals(6, unit.getTypes.get(0).getMembers.size)
     unit = Constructors.transform(unit)
-    assertEquals(5, unit.getTypes.get(0).getMembers.size)
+    assertEquals(4, unit.getTypes.get(0).getMembers.size)
   }
+  
+  @Test
+  def Immutable2 {
+    var unit = getCompilationUnit(classOf[ExampleImmutable2])
+    unit = Constructors.transform(unit)
+    // TODO
+  }
+  
 }

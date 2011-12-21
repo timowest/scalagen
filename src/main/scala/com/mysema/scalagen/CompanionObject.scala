@@ -1,19 +1,11 @@
 package com.mysema.scalagen
 
 import japa.parser.ast.CompilationUnit
-import japa.parser.ast.ImportDeclaration
-import japa.parser.ast.body.BodyDeclaration
-import japa.parser.ast.body.ClassOrInterfaceDeclaration
-import japa.parser.ast.body.ConstructorDeclaration
-import japa.parser.ast.body.FieldDeclaration
-import japa.parser.ast.body.InitializerDeclaration
-import japa.parser.ast.body.MethodDeclaration
 import japa.parser.ast.body.ModifierSet
-import japa.parser.ast.body.TypeDeclaration
-import japa.parser.ast.expr.NameExpr
 import java.util.ArrayList
 import java.util.HashMap
 import java.util.Map
+import UnitTransformer._
 
 /**
  * @author tiwe
@@ -31,7 +23,7 @@ object CompanionObject extends UnitTransformer {
       .toMap
       
     if (!typeToCompanion.isEmpty && cu.getImports == null) {
-      cu.setImports(new ArrayList[ImportDeclaration]())
+      cu.setImports(new ArrayList[Import]())
     }
       
     for ( (clazz,companion) <- typeToCompanion) {
@@ -40,14 +32,13 @@ object CompanionObject extends UnitTransformer {
     cu
   }
   
-  private def handleClassAndCompanion(cu: CompilationUnit, clazz: TypeDeclaration, 
-      companion: TypeDeclaration) {
+  private def handleClassAndCompanion(cu: CompilationUnit, clazz: Type, companion: Type) {
     cu.getTypes.add(cu.getTypes.indexOf(clazz), companion)
     if (clazz.getMembers.isEmpty()) {
       cu.getTypes.remove(clazz)
     } else if (clazz.getMembers.size == 1) {
       clazz.getMembers.get(0) match {
-        case c: ConstructorDeclaration => {
+        case c: Constructor => {
           if (c.getModifiers.isPrivate && isEmpty(c.getParameters)) {
             cu.getTypes.remove(clazz)
           } 
@@ -58,25 +49,25 @@ object CompanionObject extends UnitTransformer {
 
     // add import for companion object members, if class has not been removed
     if (cu.getTypes.contains(clazz)) {
-      var importDecl = new ImportDeclaration(new NameExpr(clazz.getName), false, true)
+      var importDecl = new Import(clazz.getName, false, true)
       cu.getImports.add(importDecl)
     }
   }
 
-  private def getCompanionObject(cu: CompilationUnit, t: TypeDeclaration): TypeDeclaration = {
+  private def getCompanionObject(cu: CompilationUnit, t: Type): Type = {
     if (t.getMembers == null) {
       return null
     }
     
-    var companion = new ClassOrInterfaceDeclaration(t.getModifiers, false, " " + t.getName)
-    companion.setMembers(new ArrayList[BodyDeclaration]())
+    var companion = new ClassOrInterface(t.getModifiers, false, " " + t.getName)
+    companion.setMembers(new ArrayList[Body]())
    
     // add static members to class
     for (member <- t.getMembers) {
       val add = member match {
-        case f: FieldDeclaration => f.getModifiers.isStatic
-        case m: MethodDeclaration => m.getModifiers.isStatic
-        case i: InitializerDeclaration => i.isStatic
+        case f: Field => f.getModifiers.isStatic
+        case m: Method => m.getModifiers.isStatic
+        case i: Initializer => i.isStatic
         case _ => false
       }
       if (add) {

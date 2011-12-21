@@ -40,6 +40,14 @@ public class ExampleControl {
             System.err.println(i.next());
         }
     }
+    
+    public void forLoopWithIf() {
+        for (Integer i : integers) {
+            if (i > 0) {
+                System.err.println(i);    
+            }            
+        }
+    }
         
         
 

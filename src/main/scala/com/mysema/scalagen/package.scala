@@ -1,11 +1,13 @@
 package com.mysema
 
-import japa.parser.ast.body.ModifierSet
+import japa.parser.ast.body._
+import japa.parser.ast.expr._
+import japa.parser.ast.stmt._
 import _root_.scala.collection.JavaConversions
 import _root_.scala.collection.Set
 
 package object scalagen {
-  
+    
   @inline
   def isEmpty(col: java.util.Collection[_]): Boolean = col == null || col.isEmpty
 
