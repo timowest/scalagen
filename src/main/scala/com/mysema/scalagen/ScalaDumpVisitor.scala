@@ -994,18 +994,38 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
   }
 
   def visit(n: ForeachStmt, arg: Context) {
-    // TODO : handle also if 
-    // e.g. for (i <- List.range(from, to) if i % 2 == 0) yield i
     printer.print("for (")
     n.getVariable.getVars.get(0).accept(this, arg)
     printer.print(" <- ")
     n.getIterable.accept(this, arg)
+    
+    def visitIfInFor(ifStmt: IfStmt): Boolean = {
+      if (ifStmt.getElseStmt == null) {
+        printer.print(" if ")
+        ifStmt.getCondition.accept(this, arg)
+        printer.print(") ")
+        ifStmt.getThenStmt.accept(this, arg)
+        true
+      } else {
+        false
+      }      
+    }
+    
+    if (n.getBody.isInstanceOf[BlockStmt]) {
+      val stmts = n.getBody.asInstanceOf[BlockStmt].getStmts
+      if (stmts.size == 1 && stmts.get(0).isInstanceOf[IfStmt]) {
+        if (visitIfInFor(stmts.get(0).asInstanceOf[IfStmt])) return
+      }
+    } else if (n.getBody.isInstanceOf[IfStmt]) {
+      if (visitIfInFor(n.getBody.asInstanceOf[IfStmt])) return
+    }
+    
     printer.print(") ")
     n.getBody.accept(this, arg)
+    
   }
-
+    
   def visit(n: ForStmt, arg: Context) {
-    // TODO : extract into transformer
     // init
     if (n.getInit != null) {
       n.getInit.foreach { i =>
@@ -1080,11 +1100,13 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
     printer.print("case ")
     n.getExcept.accept(this, arg)
     printer.print(" => ")
-    if (n.getCatchBlock.getStmts.size == 1) {
+    if (n.getCatchBlock.getStmts != null) {
+      if (n.getCatchBlock.getStmts.size == 1) {
         n.getCatchBlock.getStmts.get(0).accept(this, arg);
-    } else {
+      } else {
         n.getCatchBlock.accept(this, arg)  
-    }    
+      }  
+    }        
     printer.printLn()
   }
 

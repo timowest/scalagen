@@ -28,6 +28,10 @@ class SerializationTest extends AbstractParserTest {
   @Test
   def ExampleControl {
     val sources = toScala[ExampleControl]
+    assertContains(sources, 
+        "for (i <- 0 until integers.size) {",
+        "for (i <- integers) {",
+        "for (i <- integers if i > 0) {")
   }
   
   @Test
@@ -41,6 +45,13 @@ class SerializationTest extends AbstractParserTest {
     val sources = toScala[ExampleImmutable]
     assertContains(sources, 
         "class ExampleImmutable(@BeanProperty val firstName: String, @BeanProperty val lastName: String)")
+  }
+  
+  @Test
+  def ExampleImmutable2 {
+    val sources = toScala[ExampleImmutable2]
+    assertContains(sources, 
+        "class ExampleImmutable2(@BeanProperty val firstName: String, @BeanProperty val lastName: String)")
   }
   
   def ExampleInnerClasses {
