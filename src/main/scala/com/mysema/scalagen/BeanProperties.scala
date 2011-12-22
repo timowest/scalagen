@@ -17,8 +17,8 @@ import UnitTransformer._
 object BeanProperties extends UnitTransformer {
     
   def transform(cu: CompilationUnit): CompilationUnit = {
-    if (cu.getTypes != null) {
-      cu.getTypes.foreach { transform(cu,_) }
+    for (t <- cu.getTypes if t.getMembers != null) {
+      transform(cu, t)
     }
     cu
   }
@@ -43,10 +43,6 @@ object BeanProperties extends UnitTransformer {
   }
 
   private def transform(cu: CompilationUnit, t: Type) {
-    if (t.getMembers == null) {
-      return 
-    }
-        
     // accessors
     val methods = t.getMembers.collect { case m: Method => m }
     val getters = methods.filter(m => isGetter(m) || isBooleanGetter(m))

@@ -1,25 +1,9 @@
 package com.mysema.scalagen 
 
-import japa.parser.ast.body.BodyDeclaration
-import japa.parser.ast.body.ClassOrInterfaceDeclaration
-import japa.parser.ast.body.ConstructorDeclaration
-import japa.parser.ast.body.FieldDeclaration
-import japa.parser.ast.body.InitializerDeclaration
-import japa.parser.ast.body.MethodDeclaration
-import japa.parser.ast.body.TypeDeclaration
-import japa.parser.ast.body.VariableDeclarator
-import japa.parser.ast.body.VariableDeclaratorId
-import japa.parser.ast.expr.AnnotationExpr
-import japa.parser.ast.expr.AssignExpr
-import japa.parser.ast.expr.BinaryExpr
-import japa.parser.ast.expr.FieldAccessExpr
-import japa.parser.ast.expr.MarkerAnnotationExpr
-import japa.parser.ast.expr.MethodCallExpr
-import japa.parser.ast.expr.NameExpr
-import japa.parser.ast.expr.ThisExpr
-import japa.parser.ast.expr.UnaryExpr
-import japa.parser.ast.expr.VariableDeclarationExpr
-import japa.parser.ast.stmt.ExplicitConstructorInvocationStmt
+import japa.parser.ast.body._
+import japa.parser.ast.body._
+import japa.parser.ast.expr._
+import japa.parser.ast.stmt._
 import japa.parser.ast.CompilationUnit
 import japa.parser.ast.ImportDeclaration
 
@@ -30,7 +14,19 @@ object UnitTransformer {
   
   @inline
   implicit def toVariableDeclaratorId(s: String) = new VariableDeclaratorId(s)
+    
+  @inline
+  def getAssignment(s: Statement): Assign = {
+    s.asInstanceOf[ExpressionStmt].getExpression.asInstanceOf[Assign]
+  }
   
+  def isAssignment(s: Statement): Boolean = { s match {
+      case s: ExpressionStmt => s.getExpression.isInstanceOf[Assign] && 
+         s.getExpression().asInstanceOf[Assign].getOperator.toString == "assign"
+      case _ => false
+    }    
+  }
+      
   val BEAN_PROPERTY_IMPORT = new Import("scala.reflect.BeanProperty", false, false)
 
   val BEAN_PROPERTY = new MarkerAnnotation("BeanProperty")

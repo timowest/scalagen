@@ -14,8 +14,8 @@ import UnitTransformer._
 object Constructors extends UnitTransformer {
    
   def transform(cu: CompilationUnit): CompilationUnit = {
-    if (cu.getTypes != null) {
-      cu.getTypes.foreach { transform(cu,_) }      
+    for (t <- cu.getTypes if t.getMembers != null) {
+      transform(cu, t)
     }
     cu
   }
@@ -26,10 +26,6 @@ object Constructors extends UnitTransformer {
   }
   
   private def transform(cu: CompilationUnit, t: Type) {
-    if (t.getMembers == null) {
-      return
-    }
-    
     // get all constructors
     val constr = t.getMembers.collect { case c: Constructor => c }
       
@@ -50,7 +46,8 @@ object Constructors extends UnitTransformer {
     // copy initializer, if constructor block has non-constructor statements
     val c = first.getOrElse(constr(0))  
         
-    if (!isEmpty(c.getBlock.getStmts) && !c.getBlock.getStmts.filter(!_.isInstanceOf[ConstructorInvocation]).isEmpty) {
+    if (!isEmpty(c.getBlock.getStmts) && 
+        !c.getBlock.getStmts.filter(!_.isInstanceOf[ConstructorInvocation]).isEmpty) {
       
       processStatements(cu, t, c)
       
@@ -69,8 +66,7 @@ object Constructors extends UnitTransformer {
       
     // go through statements and map assignments to variable initializers
     c.getBlock.getStmts.collect { case s: ExpressionStmt => s }
-      .filter(s => s.getExpression.isInstanceOf[Assign] && 
-        s.getExpression.asInstanceOf[Assign].getOperator.toString == "assign")
+      .filter(isAssignment(_))
       .foreach { s =>
       val assign = s.getExpression.asInstanceOf[Assign]
       if (assign.getTarget.isInstanceOf[FieldAccess]) {

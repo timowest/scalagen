@@ -10,7 +10,7 @@ import scala.collection.JavaConversions._
 
 abstract class AbstractParserTest {
 
-  private val transformers = List[UnitTransformer](ControlStatements, CompanionObject, BeanProperties, Constructors)
+  private val transformers = List[UnitTransformer](ControlStatements, CompanionObject, BeanProperties, Constructors, Initializers)
   
   def getCompilationUnit(cl: Class[_]): CompilationUnit = {
     var file = new File("src/test/scala/" + cl.getName.replace('.', '/') + ".java")

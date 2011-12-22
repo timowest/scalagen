@@ -26,7 +26,7 @@ object CompanionObject extends UnitTransformer {
       cu.setImports(new ArrayList[Import]())
     }
       
-    for ( (clazz,companion) <- typeToCompanion) {
+    for ( (clazz, companion) <- typeToCompanion) {
       handleClassAndCompanion(cu, clazz, companion)
     }    
     cu
@@ -34,7 +34,7 @@ object CompanionObject extends UnitTransformer {
   
   private def handleClassAndCompanion(cu: CompilationUnit, clazz: Type, companion: Type) {
     cu.getTypes.add(cu.getTypes.indexOf(clazz), companion)
-    if (clazz.getMembers.isEmpty()) {
+    if (clazz.getMembers.isEmpty) {
       cu.getTypes.remove(clazz)
     } else if (clazz.getMembers.size == 1) {
       clazz.getMembers.get(0) match {
