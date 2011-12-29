@@ -1,9 +1,9 @@
 package com.mysema.scalagen 
 
 import japa.parser.ast.body._
-import japa.parser.ast.body._
 import japa.parser.ast.expr._
 import japa.parser.ast.stmt._
+import japa.parser.ast.visitor.ModifierVisitorAdapter
 import japa.parser.ast.CompilationUnit
 import japa.parser.ast.ImportDeclaration
 
@@ -39,6 +39,8 @@ object UnitTransformer {
   
   type Body = BodyDeclaration
   
+  type BooleanLiteral = BooleanLiteralExpr
+  
   type ClassOrInterface = ClassOrInterfaceDeclaration
   
   type Constructor = ConstructorDeclaration
@@ -70,6 +72,10 @@ object UnitTransformer {
   type Variable = VariableDeclarator
   
   type VariableDeclaration = VariableDeclarationExpr
+  
+}
+
+abstract class UnitTransformerBase extends ModifierVisitorAdapter[Context] with UnitTransformer {
   
 }
 

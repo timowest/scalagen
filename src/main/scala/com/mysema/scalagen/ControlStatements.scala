@@ -8,14 +8,12 @@ import japa.parser.ast.visitor._
 import java.util.{ ArrayList, Collections }
 import UnitTransformer._
 
-/**
- * @author tiwe
- *
- */
-object ControlStatements extends ModifierVisitorAdapter[Context] with UnitTransformer {
+object ControlStatements extends ControlStatements
+
+class ControlStatements extends UnitTransformerBase {
   
   def transform(cu: CompilationUnit): CompilationUnit = {
-    cu.accept(this, null).asInstanceOf[CompilationUnit] 
+    cu.accept(this, new Context()).asInstanceOf[CompilationUnit] 
   }  
     
   override def visit(n: ForStmt, arg: Context) = {

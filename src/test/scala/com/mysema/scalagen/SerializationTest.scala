@@ -14,6 +14,21 @@ class SerializationTest extends AbstractParserTest {
   }
   
   @Test
+  def ExampleAbstractCodeWriter {
+    
+  }
+  
+  @Test
+  def ExampleAbstractDao {
+    
+  }
+  
+  @Test
+  def ExampleArrayConstructorExpression {
+    
+  }
+  
+  @Test
   def ExampleBean {
     val sources = toScala[ExampleBean]
     assertContains(sources, "@BeanProperty")
@@ -26,6 +41,18 @@ class SerializationTest extends AbstractParserTest {
   }
   
   @Test
+  def ExampleConstantImpl {
+    val sources = toScala[ExampleConstantImpl[_]]
+    assertContains(sources, "private val BYTES = new Array[Constant[Byte]](CACHE_SIZE)")
+  }
+    
+  @Test
+  def ExampleConstructors {
+    val sources = toScala[ExampleConstructors]
+    assertContains(sources, "class ExampleConstructors(first: String, last: String) {")
+  }    
+  
+  @Test
   def ExampleControl {
     val sources = toScala[ExampleControl]
     assertContains(sources, 
@@ -35,9 +62,13 @@ class SerializationTest extends AbstractParserTest {
   }
   
   @Test
-  def ExampleConstructors {
-    val sources = toScala[ExampleConstructors]
-    assertContains(sources, "class ExampleConstructors(first: String, last: String) {")
+  def ExampleDao {
+    
+  }
+  
+  @Test
+  def ExampleFileSystemRegistry {
+    
   }
   
   @Test
@@ -54,6 +85,12 @@ class SerializationTest extends AbstractParserTest {
         "class ExampleImmutable2(@BeanProperty val firstName: String, @BeanProperty val lastName: String)")
   }
   
+  @Test
+  def ExampleInitializers {
+    
+  }
+  
+  @Test
   def ExampleInnerClasses {
     val sources = toScala[ExampleInnerClasses]
     assertContains(sources, "private class LoopContext private () {")
@@ -63,6 +100,16 @@ class SerializationTest extends AbstractParserTest {
   def ExampleReserved {
     val sources = toScala[ExampleReserved]
     assertContains(sources, "`object`","`type`","`var`","`val`")
+  }
+  
+  @Test
+  def ExampleSimpleCompiler {
+    
+  }
+  
+  @Test
+  def ExampleSourceFileObject {
+    
   }
   
   @Test

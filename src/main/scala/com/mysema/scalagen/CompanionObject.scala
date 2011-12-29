@@ -7,11 +7,12 @@ import java.util.HashMap
 import java.util.Map
 import UnitTransformer._
 
-/**
- * @author tiwe
- *
- */
-object CompanionObject extends UnitTransformer {
+
+object CompanionObject extends CompanionObject
+
+// TODO : as immutable transformer
+
+class CompanionObject extends UnitTransformer {
 
   def transform(cu: CompilationUnit): CompilationUnit = {
     if (cu.getTypes == null) {

@@ -109,7 +109,8 @@ public class ExampleSimpleCompiler implements JavaCompiler{
     public int run(InputStream in, OutputStream out, OutputStream err, String... arguments) {
         for (String a : arguments){
             if (a.equals("-classpath")){
-                return compiler.run(in, out, err, arguments);
+                // FIXME varargs
+                //return compiler.run(in, out, err, arguments);
             }
         }
         
@@ -120,7 +121,10 @@ public class ExampleSimpleCompiler implements JavaCompiler{
         for (String arg : arguments){
             args.add(arg);
         }        
-        return compiler.run(in, out, err, args.toArray(new String[args.size()]));
+        
+        // FIXME varargs
+        //return compiler.run(in, out, err, args.toArray(new String[args.size()]));
+        return 0;
     }
 
 }

@@ -10,11 +10,11 @@ import java.util.ArrayList
 import com.mysema.scala.BeanUtils
 import UnitTransformer._
 
-/**
- * @author tiwe
- *
- */
-object BeanProperties extends UnitTransformer {
+object BeanProperties extends BeanProperties
+
+// TODO : as immutable transformer
+
+class BeanProperties extends UnitTransformer {
     
   def transform(cu: CompilationUnit): CompilationUnit = {
     for (t <- cu.getTypes if t.getMembers != null) {
@@ -23,7 +23,7 @@ object BeanProperties extends UnitTransformer {
     cu
   }
   
-  private def isGetter(method: Method): Boolean = {
+  private def isGetter(method: Method): Boolean = { 
     method.getName.startsWith("get") && !method.getModifiers.isPrivate && 
     isEmpty(method.getParameters) && 
     !(method.getType.isInstanceOf[VoidType])

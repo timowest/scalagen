@@ -16,7 +16,6 @@ import com.mysema.query.types.Visitor;
  * 
  * @author tiwe
  */
-@SuppressWarnings("unchecked")
 public class ExampleConstantImpl<T> extends ExpressionBase<T> implements Constant<T> {
 
     private static final long serialVersionUID = -3898138057967814118L;
@@ -115,7 +114,7 @@ public class ExampleConstantImpl<T> extends ExpressionBase<T> implements Constan
     private final T constant;
     
     public ExampleConstantImpl(T constant) {
-        this((Class)constant.getClass(), constant);
+        this((Class<T>)constant.getClass(), constant);
     }
     
     public ExampleConstantImpl(Class<T> type, T constant) {
@@ -144,6 +143,7 @@ public class ExampleConstantImpl<T> extends ExpressionBase<T> implements Constan
         return constant;
     }
     
+    @Override
     public int hashCode() {
         return constant.hashCode();
     }

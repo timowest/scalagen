@@ -7,11 +7,9 @@ import japa.parser.ast.expr._
 import java.util.ArrayList
 import UnitTransformer._
 
-/**
- * @author tiwe
- *
- */
-object Initializers extends UnitTransformer {
+object Initializers extends Initializers
+
+class Initializers extends UnitTransformer {
   
   def transform(cu: CompilationUnit): CompilationUnit = {
     for (t <- cu.getTypes if t.getMembers != null) {

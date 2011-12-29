@@ -13,16 +13,23 @@ import org.apache.commons.lang3.StringUtils
 
 object ScalaDumpVisitor {
   
+  private val METHOD_REPLACEMENTS = Map("equals"->"==") 
+  
   private val SKIPPED_ANNOTATIONS = Set("Override","SuppressWarnings","Nullable")
   
-  private val SHORT_FORM = Set("query","eq","ne","lt","until","gt","size","hasNext","toString","hashCode")
+  private val SHORT_FORM = Set("query","eq","ne","lt","until","gt","size","hasNext","toString","hashCode","equals")
   
   private val RESERVED = Set("object","val","var","type")
+  
+  private val JAVA_TYPES = Set("Iterable")
+  
 }
 
 class Context {  
   var label: String = _   
-  var skip: Boolean = _
+  var skip: Boolean = false
+  var assignType: Type = _
+  var inObjectEquals: Boolean = false
 }
 
 /**
@@ -306,8 +313,17 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
     if (n.getScope != null) {
       n.getScope.accept(this, arg)
       printer.print(".")
+    } else if (JAVA_TYPES.contains(n.getName)) {
+      printer.print("java.lang.")
     }
-    printer.print(n.getName)
+    if (n.getName == "Object") {
+      printer.print(if (arg.inObjectEquals) "Any" else "AnyRef")
+    } else {
+      printer.print(n.getName)  
+    }
+    if (isEmpty(n.getTypeArgs) && n.getName == "Class") { // TODO : generalize
+      printer.print("[_]") 
+    }    
     printTypeArgs(n.getTypeArgs, arg)
   }
 
@@ -352,6 +368,8 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
   }
 
   def visit(n: FieldDeclaration, arg: Context) {
+    val oldType = arg.assignType
+    arg.assignType = n.getType
     printJavadoc(n.getJavaDoc, arg)
     var modifier = if (ModifierSet.isFinal(n.getModifiers)) "val " else "var "
     var i = n.getVariables.iterator()
@@ -373,6 +391,7 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
         printer.printLn()
       }
     }
+    arg.assignType = oldType
   }
 
   def visit(n: VariableDeclarator, arg: Context) {
@@ -386,7 +405,7 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
   def visit(n: VariableDeclaratorId, arg: Context) {
     visitName(n.getName)
     for (i <- 0 until n.getArrayCount) { 
-      printer.print("[]")
+      printer.print("[]") // FIXME
     }
   }
 
@@ -417,23 +436,25 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
 
   def visit(n: ArrayCreationExpr, arg: Context) {
     printer.print("new ")
-    for (i <- 0 until n.getArrayCount) {
-      printer.print("Array[")
-    }
-    n.getType.accept(this, arg)
-    for (i <- 0 until n.getArrayCount) {
-      printer.print("]")
-    }
+    if (arg.assignType != null) {
+        arg.assignType.accept(this, arg) 
+    } else {
+      for (i <- 0 to n.getArrayCount) {
+        printer.print("Array[")
+      }
+      n.getType.accept(this, arg)
+      for (i <- 0 to n.getArrayCount) {
+        printer.print("]")
+      }
+    }    
     if (n.getDimensions != null) {
-      printer.print("(")
-      printer.print(n.getDimensions.map(print(_,arg)).mkString(", "))
-      printer.print(")")      
+      printer.print(n.getDimensions.map(print(_,arg)).mkString("(",", ",")"))
     } else {
       n.getInitializer.accept(this, arg)
     }
   }
   
-  def visit(n: AssignExpr, arg: Context) {
+  def visit(n: AssignExpr, arg: Context) {    
     n.getTarget.accept(this, arg)
     printer.print(" ")
     import AssignExpr.{Operator => Op}
@@ -590,7 +611,7 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
       n.getScope.accept(this, arg)      
       printer.print(if ((shortForm && args == 1)) " " else ".")
     }
-    printer.print(n.getName)
+    printer.print(METHOD_REPLACEMENTS.getOrElse(n.getName, n.getName))   
     printTypeArgs(n.getTypeArgs, arg)
     if (shortForm) {
       if (args == 1) {
@@ -680,6 +701,7 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
   }
 
   def visit(n: MethodDeclaration, arg: Context) {
+    arg.inObjectEquals = n.getName == "equals" && n.getParameters.size == 1
     printJavadoc(n.getJavaDoc, arg)
     var hasOverride = printMemberAnnotations(n.getAnnotations, arg)
     printModifiers(n.getModifiers)

@@ -1,7 +1,6 @@
 package com.mysema.scalagen;
 
-import java.lang.reflect.Array;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import com.mysema.commons.lang.Assert;
@@ -25,16 +24,18 @@ public class ExampleArrayConstructorExpression<T> extends ExpressionBase<T[]> im
 
     private final List<Expression<?>> args;
 
-    @SuppressWarnings("unchecked")
-    public ExampleArrayConstructorExpression(Expression<?>... args) {
-        this((Class)Object[].class, (Expression[])args);
-    }
+//    @SuppressWarnings("unchecked")
+//    public ExampleArrayConstructorExpression(Expression<?>... args) {
+//        this((Class)Object[].class, (Expression[])args);
+//    }
 
     @SuppressWarnings("unchecked")
-    public ExampleArrayConstructorExpression(Class<T[]> type, Expression<T>... args) {
+    public ExampleArrayConstructorExpression(Class<T[]> type, Expression<T>... a) {
         super(type);
         this.elementType = (Class<T>) Assert.notNull(type.getComponentType(),"componentType");
-        this.args = Arrays.<Expression<?>>asList(args);
+        // FIXME vargs
+        //this.args = Arrays.<Expression<?>>asList(a);
+        this.args = Collections.<Expression<?>>emptyList();
     }
 
     public final Class<T> getElementType() {
@@ -52,7 +53,7 @@ public class ExampleArrayConstructorExpression<T> extends ExpressionBase<T[]> im
         if (a.getClass().getComponentType().equals(elementType)){
             return (T[])a;
         } else {
-            T[] rv = (T[]) Array.newInstance(elementType, a.length);
+            T[] rv = (T[]) java.lang.reflect.Array.newInstance(elementType, a.length);
             System.arraycopy(a, 0, rv, 0, a.length);
             return rv;
         }

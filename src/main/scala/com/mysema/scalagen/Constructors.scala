@@ -7,11 +7,11 @@ import japa.parser.ast.expr._
 import java.util.ArrayList
 import UnitTransformer._
 
-/**
- * @author tiwe
- *
- */
-object Constructors extends UnitTransformer {
+object Constructors extends Constructors
+
+// TODO : as immutable transformer
+
+class Constructors extends UnitTransformer {
    
   def transform(cu: CompilationUnit): CompilationUnit = {
     for (t <- cu.getTypes if t.getMembers != null) {
