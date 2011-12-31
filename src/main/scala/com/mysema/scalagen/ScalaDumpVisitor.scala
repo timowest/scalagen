@@ -12,7 +12,7 @@ import java.util.List
 import org.apache.commons.lang3.StringUtils
 
 object ScalaDumpVisitor {
-  
+    
   private val METHOD_REPLACEMENTS = Map("equals"->"==") 
   
   private val SKIPPED_ANNOTATIONS = Set("Override","SuppressWarnings","Nullable")
