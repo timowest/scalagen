@@ -9,6 +9,7 @@ object Converter {
   
   lazy val instance = new Converter("UTF-8",List[UnitTransformer](
     Primitives,
+    SerialVersionUID,
     ControlStatements, 
     CompanionObject, 
     BeanProperties, 

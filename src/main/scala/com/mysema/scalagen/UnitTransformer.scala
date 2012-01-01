@@ -63,6 +63,8 @@ object UnitTransformer {
   
   type Name = NameExpr
   
+  type SingleMemberAnnotation = SingleMemberAnnotationExpr
+  
   type This = ThisExpr
   
   type Type = TypeDeclaration

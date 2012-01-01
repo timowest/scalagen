@@ -31,6 +31,7 @@ class SerializationTest extends AbstractParserTest {
   def ExampleArrayConstructorExpression {
     val sources = toScala[ExampleArrayConstructorExpression[_]]
     assertContains(sources, 
+      "@SerialVersionUID(8667880104290226505L)",
       "val elementType = Assert.notNull(`type`.getComponentType, \"componentType\").asInstanceOf[Class[T]]",
       "override def equals(obj: Any): Boolean = {")
     
