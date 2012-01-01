@@ -41,6 +41,12 @@ public class ExampleControl {
         }
     }
     
+    public void forLoop4() {
+        for(int i = 0;; i++){
+            if (i > 10) return;
+        }
+    }
+    
     public void forLoopWithIf() {
         for (Integer i : integers) {
             if (i > 0) {

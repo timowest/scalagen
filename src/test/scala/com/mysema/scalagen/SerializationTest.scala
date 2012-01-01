@@ -38,6 +38,12 @@ class SerializationTest extends AbstractParserTest {
   }
   
   @Test
+  def ExampleArrays {
+    val sources = toScala[ExampleArrays]
+    assertContains(sources, "def foo(): Array[Int] = new Array[Int](2)")        
+  }
+  
+  @Test
   def ExampleBean {
     val sources = toScala[ExampleBean]
     assertContains(sources, "@BeanProperty")
@@ -105,6 +111,12 @@ class SerializationTest extends AbstractParserTest {
   def ExampleInnerClasses {
     val sources = toScala[ExampleInnerClasses]
     assertContains(sources, "private class LoopContext private () {")
+  }
+  
+  @Test
+  def ExampleModifiers {
+    val sources = toScala[ExampleModifiers]
+    assertContains(sources, "@transient private var foo = \"foo\"")
   }
   
   @Test
@@ -178,6 +190,12 @@ class SerializationTest extends AbstractParserTest {
     assertContains(sources,
       "object ExampleWithStaticAndInstance {",
       "class ExampleWithStaticAndInstance {")
+  }
+  
+  @Test
+  def ExampleWildcard {
+    val sources = toScala[ExampleWildcard]
+    assertContains(sources, "def bar(list: List[_ <: CharSequence]): Int = list.size")
   }
   
 }

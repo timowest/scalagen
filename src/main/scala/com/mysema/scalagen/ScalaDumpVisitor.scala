@@ -54,14 +54,17 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
   
   private def printModifiers(m: Int) {
     val modifiers: RichModifiers = new RichModifiers(m)
+    if (modifiers.isTransient) {
+      printer.print("@transient ")
+    }    
+    
     if (modifiers.isPrivate) {
       printer.print("private ")
-    }
-    if (modifiers.isProtected) {
+    } else if (modifiers.isProtected) {
       printer.print("protected ")
+    } else if (modifiers.isPublic) {
     }
-    if (modifiers.isPublic) {
-    }
+    
     if (modifiers.isAbstract) {
       printer.print("abstract ")
     }
@@ -79,9 +82,6 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
     }
     if (modifiers.isSynchronized) {
       printer.print("synchronized ")
-    }
-    if (modifiers.isTransient) {
-      printer.print("transient ")
     }
     if (modifiers.isVolatile) {
       printer.print("volatile ")
