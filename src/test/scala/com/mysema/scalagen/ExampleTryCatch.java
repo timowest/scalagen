@@ -21,4 +21,35 @@ public class ExampleTryCatch {
         }
     }
 
+    void foo() {
+        try {
+
+        } finally {
+
+        }
+    }
+
+    void bar() {
+        try {
+        } catch (Exception e) {
+        }
+    }
+
+    void baz() {
+        try {
+            bar();
+        } catch (Exception e) {
+        } finally {
+            foo();
+        }
+    }
+
+    void buzz() {
+        try {
+
+        } finally {
+            baz();
+        }
+    }
+
 }

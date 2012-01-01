@@ -7,18 +7,6 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.FileNotFoundException
 import scala.collection.JavaConversions._
-import AbstractParserTest._
-
-object AbstractParserTest {
-  
-  val converter = new Converter("UTF-8",List[UnitTransformer](
-    Primitives,
-    ControlStatements, 
-    CompanionObject, 
-    BeanProperties, 
-    Constructors, 
-    Initializers))  
-}
 
 abstract class AbstractParserTest {
   
@@ -30,6 +18,6 @@ abstract class AbstractParserTest {
   
   def toScala[T](implicit mf: Manifest[T]): String = toScala(getCompilationUnit(mf.erasure))
   
-  def toScala(unit: CompilationUnit): String = converter.toScala(unit)
+  def toScala(unit: CompilationUnit): String = Converter.instance.toScala(unit)
   
 }

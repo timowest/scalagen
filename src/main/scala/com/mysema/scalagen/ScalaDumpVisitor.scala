@@ -27,9 +27,10 @@ object ScalaDumpVisitor {
 
 class Context {  
   var label: String = _   
-  var skip: Boolean = false
+  var skip = false
   var assignType: Type = _
-  var inObjectEquals: Boolean = false
+  var inObjectEquals = false
+  var returnOn = false
 }
 
 /**
@@ -820,10 +821,15 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
     printer.printLn("{")
     if (n.getStmts != null) {
       printer.indent()
-      for (s <- n.getStmts) {
-        s.accept(this, arg)
+      val s = n.getStmts.iterator()
+      val returnOn = arg.returnOn
+      while (s.hasNext) {
+        val stmt = s.next
+        arg.returnOn = returnOn || s.hasNext
+        stmt.accept(this, arg)
         printer.printLn()
       }
+      arg.returnOn = returnOn
       printer.unindent()
     }
     printer.print("}")
@@ -900,10 +906,12 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
 
   def visit(n: ReturnStmt, arg: Context) {
     if (n.getExpr != null) {
+      if (arg.returnOn) {
+        printer.print("return ")
+      }
       n.getExpr.accept(this, arg)
     } else {
       printer.print("return")
-      printer.printLn()
     }
   }
 

@@ -15,16 +15,24 @@ class SerializationTest extends AbstractParserTest {
   
   @Test
   def ExampleAbstractCodeWriter {
-    
+    val sources = toScala[ExampleAbstractCodeWriter[_]]
+    assertContains(sources,
+      "abstract class ExampleAbstractCodeWriter[T <: ExampleAbstractCodeWriter[T]]" +
+      "(appendable: Appendable, spaces: Int) extends Appendable {")
   }
   
   @Test
   def ExampleAbstractDao {
-    
+    val sources = toScala[ExampleAbstractDao[_]]
+    assertContains(sources, "protected def query(): JPQLQuery = new HibernateQuery(getSession)")
   }
   
   @Test
   def ExampleArrayConstructorExpression {
+    val sources = toScala[ExampleArrayConstructorExpression[_]]
+    assertContains(sources, 
+      "val elementType = Assert.notNull(`type`.getComponentType, \"componentType\").asInstanceOf[Class[T]]",
+      "override def equals(obj: Any): Boolean = {")
     
   }
   
@@ -63,12 +71,14 @@ class SerializationTest extends AbstractParserTest {
   
   @Test
   def ExampleDao {
-    
+    val sources = toScala[ExampleDao[_,_]]
+    assertContains(sources, "trait ExampleDao[Entity, Id <: Serializable] {")
   }
   
   @Test
   def ExampleFileSystemRegistry {
-    
+    val sources = toScala[ExampleFileSystemRegistry]
+    assertContains(sources, "class ExampleFileSystemRegistry private () {")  
   }
   
   @Test
@@ -103,8 +113,20 @@ class SerializationTest extends AbstractParserTest {
   }
   
   @Test
+  def ExampleReturns {
+    val sources = toScala[ExampleReturns]
+    assertContains(sources,
+      "for (i <- start until n if i / 5 > 1) return i",
+      "    -1")    
+  }
+  
+  @Test
   def ExampleSimpleCompiler {
-    
+    val sources = toScala[ExampleSimpleCompiler]
+    assertContains(sources, 
+      "for (url <- (classLoader.asInstanceOf[URLClassLoader]).getURLs) {",
+      "case e: UnsupportedEncodingException => throw new RuntimeException(e)",
+      "this(ToolProvider.getSystemJavaCompiler, Thread.currentThread().getContextClassLoader)")
   }
   
   @Test

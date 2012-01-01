@@ -26,7 +26,7 @@ class ControlStatements extends UnitTransformerBase {
      && n.getCompare.asInstanceOf[Binary].getOperator.toString == "less"
      && n.getUpdate != null && n.getUpdate.size == 1 
      && n.getUpdate.get(0).isInstanceOf[Unary]
-     && n.getUpdate.get(0).asInstanceOf[Unary].getOperator.toString == "posIncrement") {
+     && n.getUpdate.get(0).asInstanceOf[Unary].getOperator.toString.endsWith("Increment")) {
       val init = n.getInit.get(0).asInstanceOf[VariableDeclaration]
       val cmp = n.getCompare.asInstanceOf[Binary]
       var until = new MethodCall(init.getVars.get(0).getInit, "until", Collections.singletonList(cmp.getRight))
