@@ -13,6 +13,6 @@ object BeanUtils {
     }
   }
 
-  def uncapitalize(name: String ) = Introspector.decapitalize(name);
+  def uncapitalize(name: String): String = Introspector.decapitalize(name);
 
 }

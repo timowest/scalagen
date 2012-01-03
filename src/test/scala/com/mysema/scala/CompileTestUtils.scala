@@ -34,7 +34,7 @@ trait CompileTestUtils {
 
     val interpreter = new Interpreter(env, interpreterWriter)
     try {
-      val result = interpreter.interpret(source.replaceAll("package", "import"))
+      val result = interpreter.interpret(source.replaceAll("package ", "import "))
       if (result != Success) {
         throw new AssertionError("Compile failed, interpreter output:\n" + out.toString("utf-8"))
       }

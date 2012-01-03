@@ -7,10 +7,7 @@ import java.util.HashMap
 import java.util.Map
 import UnitTransformer._
 
-
 object CompanionObject extends CompanionObject
-
-// TODO : as immutable transformer
 
 class CompanionObject extends UnitTransformer {
 

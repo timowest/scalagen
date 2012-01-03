@@ -15,17 +15,12 @@ import org.apache.commons.io.FileUtils
 object ConvertQuerydsl extends AbstractParserTest {
   
   def main(args: Array[String]) {
-    var resources = new ArrayList[File]()
-    resources.addAll(Arrays.asList(new File("../../querydsl/querydsl-core/src/main/java/com/mysema/query").listFiles():_*))
-    resources.addAll(Arrays.asList(new File("../../querydsl/querydsl-core/src/main/java/com/mysema/query/types").listFiles():_*))
-    for (res <- resources) {
-      if (res.getName.endsWith(".java")) {
-        var unit = JavaParser.parse(new FileInputStream(res))
-        val sources = toScala(unit)
-        var out = new File("target/querydsl/" + res.getName.substring(0, res.getName.length() - 5) + ".scala")
-        FileUtils.writeStringToFile(out, sources, "UTF-8")
-      }
-    }
+    Converter.instance.convert(
+        new File("../../querydsl/querydsl-core/src/main/java"),
+        new File("target/querydsl-core"))
+    Converter.instance.convert(
+        new File("../../querydsl/querydsl-sql/src/main/java"),
+        new File("target/querydsl-sql"))    
   }
   
 }

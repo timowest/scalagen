@@ -16,9 +16,7 @@ class Primitives  extends UnitTransformerBase {
   
   private val FALSE = new BooleanLiteral(false)
   
-  private val primitives = Set("Byte","Char","Double","Float","Integer","Long","Short")
-  
-  // TODO : convert $TYPE to java.lang.$TYPE
+  private val primitives = Set("Boolean","Byte","Char","Double","Float","Integer","Long","Short")
   
   def transform(cu: CompilationUnit): CompilationUnit = {
     cu.accept(this, new Context()).asInstanceOf[CompilationUnit] 

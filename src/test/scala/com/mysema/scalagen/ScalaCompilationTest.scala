@@ -12,7 +12,7 @@ class ScalaCompilationTest extends AbstractParserTest with CompileTestUtils {
 
   @Test
   def Compile {
-    val resources = List[File](new File("src/test/scala/com/mysema/scalagen").listFiles():_*)
+    val resources = List[File](new File("src/test/scala/com/mysema/examples").listFiles():_*)
     val failures = Map.newBuilder[String,String]
     
     resources.filter(_.getName.endsWith(".java")).foreach { f =>

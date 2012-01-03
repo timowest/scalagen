@@ -16,10 +16,10 @@ class ScalaDumpVisitorTest extends AbstractParserTest {
 
   @Test
   def Dump {
-    var resources = new ArrayList[File]()
-    resources.addAll(Arrays.asList(new File("src/test/scala/com/mysema/scalagen").listFiles():_*))
+    val resources = new ArrayList[File]()
+    resources.addAll(Arrays.asList(new File("src/test/scala/com/mysema/examples").listFiles():_*))
     for (res <- resources if res.getName.endsWith(".java")) {
-      var out = new File("target/" + res.getName.substring(0, res.getName.length() - 5) + ".scala")
+      val out = new File("target/" + res.getName.substring(0, res.getName.length() - 5) + ".scala")
       Converter.instance.convertFile(res, out)
     }
   }

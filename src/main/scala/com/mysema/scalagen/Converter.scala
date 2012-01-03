@@ -47,7 +47,7 @@ class Converter(encoding: String, transformers: List[UnitTransformer]) {
     FileUtils.writeStringToFile(out, sources, "UTF-8")
   }
     
-  def toScala(unit: CompilationUnit) = {
+  def toScala(unit: CompilationUnit): String = {
     val transformed = transformers.foldLeft(unit) { case (u,t) => t.transform(u) }    
     var visitor = new ScalaDumpVisitor()
     unit.accept(visitor, new Context())

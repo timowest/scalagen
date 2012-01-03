@@ -6,6 +6,7 @@ import java.io.IOException
 import org.junit.{ Test, Ignore }
 import org.junit.Assert._
 import japa.parser.JavaParser
+import com.mysema.examples._
 
 class SerializationTest extends AbstractParserTest {
   
@@ -14,22 +15,22 @@ class SerializationTest extends AbstractParserTest {
   }
   
   @Test
-  def ExampleAbstractCodeWriter {
-    val sources = toScala[ExampleAbstractCodeWriter[_]]
+  def AbstractCodeWriter {
+    val sources = toScala[AbstractCodeWriter[_]]
     assertContains(sources,
-      "abstract class ExampleAbstractCodeWriter[T <: ExampleAbstractCodeWriter[T]]" +
+      "abstract class AbstractCodeWriter[T <: AbstractCodeWriter[T]]" +
       "(appendable: Appendable, spaces: Int) extends Appendable {")
   }
   
   @Test
-  def ExampleAbstractDao {
-    val sources = toScala[ExampleAbstractDao[_]]
+  def AbstractDao {
+    val sources = toScala[AbstractDao[_]]
     assertContains(sources, "protected def query(): JPQLQuery = new HibernateQuery(getSession)")
   }
   
   @Test
-  def ExampleArrayConstructorExpression {
-    val sources = toScala[ExampleArrayConstructorExpression[_]]
+  def ArrayConstructorExpression {
+    val sources = toScala[ArrayConstructorExpression[_]]
     assertContains(sources, 
       "@SerialVersionUID(8667880104290226505L)",
       "val elementType = Assert.notNull(`type`.getComponentType, \"componentType\").asInstanceOf[Class[T]]",
@@ -38,38 +39,44 @@ class SerializationTest extends AbstractParserTest {
   }
   
   @Test
-  def ExampleArrays {
-    val sources = toScala[ExampleArrays]
+  def ArrayTests {
+    val sources = toScala[ArrayTests]
     assertContains(sources, "def foo(): Array[Int] = new Array[Int](2)")        
   }
   
   @Test
-  def ExampleBean {
-    val sources = toScala[ExampleBean]
+  def Bean {
+    val sources = toScala[Bean]
     assertContains(sources, "@BeanProperty")
   }
   
   @Test
-  def ExampleBean2 {
-    val sources = toScala[ExampleBean2]
+  def Bean2 {
+    val sources = toScala[Bean2]
     assertContains(sources, "@BeanProperty")
   }
   
   @Test
-  def ExampleConstantImpl {
-    val sources = toScala[ExampleConstantImpl[_]]
+  def Casts {
+    val sources = toScala[Casts]
+    assertContains(sources, "args.length.toDouble")
+  }
+  
+  @Test
+  def ConstantImpl {
+    val sources = toScala[ConstantImpl[_]]
     assertContains(sources, "private val BYTES = new Array[Constant[Byte]](CACHE_SIZE)")
   }
     
   @Test
-  def ExampleConstructors {
-    val sources = toScala[ExampleConstructors]
-    assertContains(sources, "class ExampleConstructors(first: String, last: String) {")
+  def Constructors {
+    val sources = toScala[com.mysema.examples.Constructors]
+    assertContains(sources, "class Constructors(first: String, last: String) {")
   }    
   
   @Test
-  def ExampleControl {
-    val sources = toScala[ExampleControl]
+  def Control {
+    val sources = toScala[Control]
     assertContains(sources, 
         "for (i <- 0 until integers.size) {",
         "for (i <- integers) {",
@@ -77,65 +84,65 @@ class SerializationTest extends AbstractParserTest {
   }
   
   @Test
-  def ExampleDao {
-    val sources = toScala[ExampleDao[_,_]]
-    assertContains(sources, "trait ExampleDao[Entity, Id <: Serializable] {")
+  def Dao {
+    val sources = toScala[IDao[_,_]]
+    assertContains(sources, "trait IDao[Entity, Id <: Serializable] {")
   }
   
   @Test
-  def ExampleFileSystemRegistry {
-    val sources = toScala[ExampleFileSystemRegistry]
-    assertContains(sources, "class ExampleFileSystemRegistry private () {")  
+  def FileSystemRegistry {
+    val sources = toScala[FileSystemRegistry]
+    assertContains(sources, "class FileSystemRegistry private () {")  
   }
   
   @Test
-  def ExampleImmutable {
-    val sources = toScala[ExampleImmutable]
+  def Immutable {
+    val sources = toScala[Immutable]
     assertContains(sources, 
-        "class ExampleImmutable(@BeanProperty val firstName: String, @BeanProperty val lastName: String)")
+        "class Immutable(@BeanProperty val firstName: String, @BeanProperty val lastName: String)")
   }
   
   @Test
-  def ExampleImmutable2 {
-    val sources = toScala[ExampleImmutable2]
+  def Immutable2 {
+    val sources = toScala[Immutable2]
     assertContains(sources, 
-        "class ExampleImmutable2(@BeanProperty val firstName: String, @BeanProperty val lastName: String)")
+        "class Immutable2(@BeanProperty val firstName: String, @BeanProperty val lastName: String)")
   }
   
   @Test
-  def ExampleInitializers {
+  def Initializers {
     
   }
   
   @Test
-  def ExampleInnerClasses {
-    val sources = toScala[ExampleInnerClasses]
+  def InnerClasses {
+    val sources = toScala[InnerClasses]
     assertContains(sources, "private class LoopContext private () {")
   }
   
   @Test
-  def ExampleModifiers {
-    val sources = toScala[ExampleModifiers]
+  def Modifiers {
+    val sources = toScala[Modifiers]
     assertContains(sources, "@transient private var foo = \"foo\"")
   }
   
   @Test
-  def ExampleReserved {
-    val sources = toScala[ExampleReserved]
+  def Reserved {
+    val sources = toScala[Reserved]
     assertContains(sources, "`object`","`type`","`var`","`val`")
   }
   
   @Test
-  def ExampleReturns {
-    val sources = toScala[ExampleReturns]
+  def Returns {
+    val sources = toScala[Returns]
     assertContains(sources,
       "for (i <- start until n if i / 5 > 1) return i",
       "    -1")    
   }
   
   @Test
-  def ExampleSimpleCompiler {
-    val sources = toScala[ExampleSimpleCompiler]
+  def SimpleCompiler {
+    val sources = toScala[SimpleCompiler]
     assertContains(sources, 
       "for (url <- (classLoader.asInstanceOf[URLClassLoader]).getURLs) {",
       "case e: UnsupportedEncodingException => throw new RuntimeException(e)",
@@ -143,20 +150,20 @@ class SerializationTest extends AbstractParserTest {
   }
   
   @Test
-  def ExampleSourceFileObject {
+  def SourceFileObject {
     
   }
   
   @Test
-  def ExampleSuperConstructors {
-    val sources = toScala[ExampleSuperConstructors]
+  def SuperConstructors {
+    val sources = toScala[SuperConstructors]
     assertContains(sources, 
-      "class ExampleSuperConstructors(first: String, last: String) extends SuperClass(first) {")
+      "class SuperConstructors(first: String, last: String) extends SuperClass(first) {")
   }
   
   @Test
-  def ExampleSwitchCase {
-    val sources = toScala[ExampleSwitchCase]
+  def SwitchCase {
+    val sources = toScala[SwitchCase]
     assertContains(sources, 
       "case 0 => System.out.println(0)", 
       "case 1 => System.out.println(1)",
@@ -164,8 +171,8 @@ class SerializationTest extends AbstractParserTest {
   }
   
   @Test
-  def ExampleTryCatch {
-    val sources = toScala[ExampleTryCatch]
+  def TryCatch {
+    val sources = toScala[TryCatch]
     assertContains(sources, 
       "case e: IllegalArgumentException => throw new RuntimeException(e)",
       "case e: NullPointerException => System.err.println(e.getMessage)")
@@ -173,28 +180,28 @@ class SerializationTest extends AbstractParserTest {
   }
   
   @Test @Ignore // FIXME
-  def ExampleWithComments {
-    val sources = toScala[ExampleWithComments]
+  def WithComments {
+    val sources = toScala[WithComments]
     assertContains(sources, "javadocs", "// comments inside")
   }
   
   @Test
-  def ExampleWithStatic {
-    val sources = toScala[ExampleWithStatic]
-    assertContains(sources, "object ExampleWithStatic {")
+  def WithStatic {
+    val sources = toScala[WithStatic]
+    assertContains(sources, "object WithStatic {")
   }
   
   @Test
-  def ExampleWithStaticAndInstance {
-    val sources = toScala[ExampleWithStaticAndInstance]
+  def WithStaticAndInstance {
+    val sources = toScala[WithStaticAndInstance]
     assertContains(sources,
-      "object ExampleWithStaticAndInstance {",
-      "class ExampleWithStaticAndInstance {")
+      "object WithStaticAndInstance {",
+      "class WithStaticAndInstance {")
   }
   
   @Test
-  def ExampleWildcard {
-    val sources = toScala[ExampleWildcard]
+  def Wildcard {
+    val sources = toScala[Wildcard]
     assertContains(sources, "def bar(list: List[_ <: CharSequence]): Int = list.size")
   }
   

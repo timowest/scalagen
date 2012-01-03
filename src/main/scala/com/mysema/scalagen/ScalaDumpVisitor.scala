@@ -17,7 +17,9 @@ object ScalaDumpVisitor {
   
   private val SKIPPED_ANNOTATIONS = Set("Override","SuppressWarnings","Nullable")
   
-  private val SHORT_FORM = Set("query","eq","ne","lt","until","gt","size","hasNext","toString","hashCode","equals")
+  private val PRIMITIVES = Set("Boolean","Byte","Character","Double","Float","Integer","Long","Short")
+  
+  private val SHORT_FORM = Set("query","eq","ne","lt","until","gt","size","hasNext","toString","hashCode","equals","!=")
   
   private val RESERVED = Set("object","val","var","type")
   
@@ -26,11 +28,14 @@ object ScalaDumpVisitor {
 }
 
 class Context {  
+  var arrayAccess = false
+  var classOf = false
   var label: String = _   
   var skip = false
   var assignType: Type = _
   var inObjectEquals = false
   var returnOn = false
+  var typeArg = false
 }
 
 /**
@@ -52,11 +57,18 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
     v.getSource
   }
   
+  private def printMethodModifiers(m: Int) {
+    printModifiers(ModifierSet.removeModifier(m, ModifierSet.ABSTRACT))
+  }
+  
   private def printModifiers(m: Int) {
     val modifiers: RichModifiers = new RichModifiers(m)
     if (modifiers.isTransient) {
       printer.print("@transient ")
     }    
+    if (modifiers.isVolatile) {
+      printer.print("@volatile ")
+    }
     
     if (modifiers.isPrivate) {
       printer.print("private ")
@@ -75,16 +87,13 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
       // skip
     }
     if (modifiers.isNative) {
-      printer.print("native ")
+      printer.print("/* native */ ")
     }
     if (modifiers.isStrictfp) {
-      printer.print("strictfp ")
+      printer.print("/* strictfp */ ")
     }
     if (modifiers.isSynchronized) {
-      printer.print("synchronized ")
-    }
-    if (modifiers.isVolatile) {
-      printer.print("volatile ")
+      printer.print("/* synchronized */ ")
     }
   }
 
@@ -122,6 +131,8 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
 
   private def printTypeArgs(args: List[Type], arg: Context) {
     if (args != null) {
+      val typeArg = arg.typeArg
+      arg.typeArg = true
       printer.print("[")
       var i = args.iterator()
       while (i.hasNext) {
@@ -132,11 +143,12 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
         }
       }
       printer.print("]")
+      arg.typeArg = typeArg
     }
   }
 
   private def printTypeParameters(args: List[TypeParameter], arg: Context) {
-    if (args != null) {
+    if (args != null) {      
       printer.print("[")
       var i = args.iterator()
       while (i.hasNext) {
@@ -146,7 +158,7 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
           printer.print(", ")
         }
       }
-      printer.print("]")
+      printer.print("]")      
     }
   }
 
@@ -222,13 +234,20 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
     printer.print(".")
     printer.print(n.getName)
   }
-
+  
   def visit(n: ImportDeclaration, arg: Context) {
     printer.print("import ")
-    n.getName.accept(this, arg)
-    if (n.isAsterisk) {
-      printer.print("._")
+    if (n.getName.getName.endsWith(".Array") && !n.isAsterisk) {
+      val className = n.getName.getName
+      val pkg = className.substring(0, className.lastIndexOf('.'))
+      printer.print(pkg + ".{Array => _Array}")
+    } else {
+      n.getName.accept(this, arg)
+      if (n.isAsterisk) {
+        printer.print("._")
+      }
     }
+    
     printer.printLn()
   }
 
@@ -313,12 +332,22 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
   def visit(n: ClassOrInterfaceType, arg: Context) {
     if (n.getScope != null) {
       n.getScope.accept(this, arg)
-      printer.print(".")
-    } else if (JAVA_TYPES.contains(n.getName)) {
+      printer.print(".")    
+    } else if (!arg.classOf && !arg.typeArg && PRIMITIVES.contains(n.getName)) {    
+      // primitive types are favored for class literals and type arguments
+      printer.print("java.lang.")
+    } else if (JAVA_TYPES.contains(n.getName)) {  
       printer.print("java.lang.")
     }
     if (n.getName == "Object") {
-      printer.print(if (arg.inObjectEquals) "Any" else "AnyRef")
+      if (arg.inObjectEquals || arg.typeArg) {
+        printer.print("Any") 
+      } else {
+        printer.print("AnyRef")
+      }
+    } else if (n.getScope == null && n.getName == "Array") { 
+      // TODO : only if Array import is present
+      printer.print("_Array")
     } else {
       printer.print(n.getName)  
     }
@@ -336,7 +365,7 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
       while (i.hasNext) {
         i.next().accept(this, arg)
         if (i.hasNext) {
-          printer.print(" & ")
+          printer.print(" with ")
         }
       }
     }
@@ -347,10 +376,13 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
   }
 
   def visit(n: ReferenceType, arg: Context) {
+    val typeArg = arg.typeArg
     for (i <- 0 until n.getArrayCount) {    
       printer.print("Array[")
+      arg.typeArg = true
     }
     n.getType.accept(this, arg)
+    arg.typeArg = typeArg
     for (i <- 0 until n.getArrayCount) {
       printer.print("]")
     }
@@ -429,22 +461,31 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
   }
 
   def visit(n: ArrayAccessExpr, arg: Context) {
+    val arrayAccess = arg.arrayAccess
+    arg.arrayAccess = true
     n.getName.accept(this, arg)
+    arg.arrayAccess = arrayAccess
     printer.print("(")
     n.getIndex.accept(this, arg)
     printer.print(")")
   }
 
   def visit(n: ArrayCreationExpr, arg: Context) {
-    printer.print("new ")
+    if (n.getDimensions != null) {
+      printer.print("new ")  
+    }    
     if (arg.assignType != null) {
         arg.assignType.accept(this, arg) 
     } else {
-      for (i <- 0 to n.getArrayCount) {
+      val max = if (n.getDimensions != null) n.getArrayCount + 1 else n.getArrayCount        
+      for (i <- 0 until max) {
         printer.print("Array[")
       }
+      val typeArg = arg.typeArg
+      arg.typeArg = true
       n.getType.accept(this, arg)
-      for (i <- 0 to n.getArrayCount) {
+      arg.typeArg = typeArg
+      for (i <- 0 until max) {
         printer.print("]")
       }
     }    
@@ -510,14 +551,21 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
 
   def visit(n: CastExpr, arg: Context) {
     n.getExpr.accept(this, arg)
-    printer.print(".asInstanceOf[")
-    n.getType.accept(this, arg)
-    printer.print("]")
+    if (n.getType.isInstanceOf[PrimitiveType]) {
+      printer.print(".to")
+      n.getType.accept(this, arg)
+    } else {
+      printer.print(".asInstanceOf[")
+      n.getType.accept(this, arg)
+      printer.print("]")  
+    }    
   }
 
   def visit(n: ClassExpr, arg: Context) {
     printer.print("classOf[")
+    arg.classOf = true
     n.getType.accept(this, arg)
+    arg.classOf = false
     printer.print("]")
   }
 
@@ -614,7 +662,14 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
     }
     printer.print(METHOD_REPLACEMENTS.getOrElse(n.getName, n.getName))   
     printTypeArgs(n.getTypeArgs, arg)
-    if (shortForm) {
+    if (n.getName == "asList" && n.getScope != null && n.getScope.toString == "Arrays" && n.getArgs.size == 1) {
+      // assume Arrays.asList is called with an array argument
+      printer.print("(")
+      n.getArgs().get(0).accept(this, arg)
+      printer.print(":_*)")
+    } else if (arg.arrayAccess) {  
+      printArguments(n.getArgs, arg)    
+    } else if (shortForm) {
       if (args == 1) {
         printer.print(" ")
         n.getArgs.get(0).accept(this, arg)
@@ -623,7 +678,7 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
       printArguments(n.getArgs, arg)
     }
   }
-
+  
   def visit(n: ObjectCreationExpr, arg: Context) {
     if (n.getScope != null) {
       n.getScope.accept(this, arg)
@@ -644,6 +699,15 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
 
   def visit(n: UnaryExpr, arg: Context) {
     import UnaryExpr.{Operator => Op}
+    
+    // !x.equals(y) into x != y
+    if (n.getOperator == Op.not && n.getExpr.isInstanceOf[MethodCallExpr] &&
+        n.getExpr.asInstanceOf[MethodCallExpr].getName == "equals") {
+      val method = n.getExpr.asInstanceOf[MethodCallExpr]
+      new MethodCallExpr(method.getScope, "!=", method.getArgs).accept(this, arg)
+      return
+    }
+    
     printer.print(n.getOperator match {
       case Op.positive => "+"
       case Op.negative => "-"
@@ -705,7 +769,7 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
     arg.inObjectEquals = n.getName == "equals" && n.getParameters.size == 1
     printJavadoc(n.getJavaDoc, arg)
     var hasOverride = printMemberAnnotations(n.getAnnotations, arg)
-    printModifiers(n.getModifiers)
+    printMethodModifiers(n.getModifiers)
     if (hasOverride) {
       printer.print("override ")
     }

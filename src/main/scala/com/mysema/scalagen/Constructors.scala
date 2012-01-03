@@ -9,8 +9,6 @@ import UnitTransformer._
 
 object Constructors extends Constructors
 
-// TODO : as immutable transformer
-
 class Constructors extends UnitTransformer {
    
   def transform(cu: CompilationUnit): CompilationUnit = {
