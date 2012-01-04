@@ -8,6 +8,8 @@ import org.apache.commons.io.FileUtils
 object Converter {
   
   lazy val instance = new Converter("UTF-8",List[UnitTransformer](
+    Annotations,
+    Enums,
     Primitives,
     SerialVersionUID,
     ControlStatements, 
@@ -16,17 +18,9 @@ object Converter {
     Constructors, 
     Initializers))  
   
-//  private def toTransformer(str: String): UnitTransformer = {
-//    Class.forName("com.mysema.scalagen."+str).newInstance.asInstanceOf[UnitTransformer]
-//  }
-  
 }
 
 class Converter(encoding: String, transformers: List[UnitTransformer]) {
-  
-//  def this(encoding: String, transformers: String*) {
-//    this(encoding, transformers.toList.map(s => Converter.toTransformer(s)))
-//  }   
     
   def convert(inFolder: File, outFolder: File) {
     val inFolderLength = inFolder.getPath.length + 1

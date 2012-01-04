@@ -7,12 +7,17 @@ import japa.parser.ast.stmt._
 import japa.parser.ast.`type`._
 import japa.parser.ast.visitor.VoidVisitor
 import java.util.ArrayList
+import java.util.HashMap
 import java.util.Iterator
 import java.util.List
 import org.apache.commons.lang3.StringUtils
 
 object ScalaDumpVisitor {
     
+  private val PARAMETRIZED = Set("Class","Comparable","Iterable")
+  
+  private val UTIL_PARAMETRIZED = Set("Collection","List","Set","Map")
+  
   private val METHOD_REPLACEMENTS = Map("equals"->"==") 
   
   private val SKIPPED_ANNOTATIONS = Set("Override","SuppressWarnings","Nullable")
@@ -21,7 +26,7 @@ object ScalaDumpVisitor {
   
   private val SHORT_FORM = Set("query","eq","ne","lt","until","gt","size","hasNext","toString","hashCode","equals","!=")
   
-  private val RESERVED = Set("object","val","var","type")
+  private val RESERVED = Set("object","val","var","type","def")
   
   private val JAVA_TYPES = Set("Iterable")
   
@@ -36,6 +41,7 @@ class Context {
   var inObjectEquals = false
   var returnOn = false
   var typeArg = false
+  var imports = Map[String,String]()
 }
 
 /**
@@ -193,6 +199,10 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
       }      
     }
     
+    arg.imports = n.getImports
+      .filter(i => !i.isAsterisk && !i.isStatic)
+      .map(i => split(i.getName).swap).toMap
+    
     printer.print("//remove if not needed\n")
     printer.print("import scala.collection.JavaConversions._\n")
     printer.printLn()
@@ -207,8 +217,16 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
         }
       }
     }
+    
+    arg.imports = Map[String,String]()
   }
-
+  
+  private def split(name: NameExpr): (String, String) = {
+    val str = name.toString
+    val separator = str.lastIndexOf('.')
+    (str.substring(0,separator), str.substring(separator+1)) 
+  }
+   
   def visit(n: PackageDeclaration, arg: Context) {
     printAnnotations(n.getAnnotations, arg)
     printer.print("package ")
@@ -351,8 +369,13 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
     } else {
       printer.print(n.getName)  
     }
-    if (isEmpty(n.getTypeArgs) && n.getName == "Class") { // TODO : generalize
-      printer.print("[_]") 
+    if (isEmpty(n.getTypeArgs)) {
+      if (PARAMETRIZED.contains(n.getName)) {
+        printer.print("[_]")  
+      } else if (UTIL_PARAMETRIZED.contains(n.getName) && 
+          arg.imports.getOrElse(n.getName,"") == "java.util") {
+        printer.print(if (n.getName == "Map") "[_,_]" else "[_]")
+      }       
     }    
     printTypeArgs(n.getTypeArgs, arg)
   }

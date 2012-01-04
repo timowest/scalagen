@@ -19,6 +19,9 @@ class Initializers extends UnitTransformer {
   }
   
   private def transform(cu: CompilationUnit, t: Type) {    
+    // transform sub types
+    t.getMembers.collect { case t: Type => t}.foreach(t => transform(cu, t))    
+    
     val initializers = t.getMembers.collect { case i: Initializer => i }
     if (!initializers.isEmpty) {
       val fields = t.getMembers.collect { case f: Field => f }

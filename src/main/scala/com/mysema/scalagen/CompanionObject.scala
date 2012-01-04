@@ -15,30 +15,54 @@ class CompanionObject extends UnitTransformer {
     if (cu.getTypes == null) {
       return cu
     }
+    
+    // track lower level companion objects
+    cu.getTypes.foreach { t => handleType(cu,t) }
         
-    val typeToCompanion = cu.getTypes.map(t => (t, getCompanionObject(cu,t)))
-      .filter(_._2 != null)
-      .toMap
+    // track top level companions
+    val typeToCompanion = cu.getTypes.map(t => (t, getCompanionObject(t)))
+      .filter(_._2 != null).toMap
       
     if (!typeToCompanion.isEmpty && cu.getImports == null) {
       cu.setImports(new ArrayList[Import]())
     }
       
     for ( (clazz, companion) <- typeToCompanion) {
-      handleClassAndCompanion(cu, clazz, companion)
+      handleClassAndCompanion(cu, cu.getTypes, clazz, companion)
     }    
     cu
   }
   
-  private def handleClassAndCompanion(cu: CompilationUnit, clazz: Type, companion: Type) {
-    cu.getTypes.add(cu.getTypes.indexOf(clazz), companion)
+  private def handleType(cu: CompilationUnit, clazz: Type) {
+    if (clazz.getMembers == null) {
+      return
+    }
+    
+    val types = clazz.getMembers.collect { case t: Type => t }
+    
+    types.foreach { t => handleType(cu,t) }
+    
+    val typeToCompanion = types.map(t => (t, getCompanionObject(t)))
+      .filter(_._2 != null).toMap
+      
+    if (!typeToCompanion.isEmpty && cu.getImports == null) {
+      cu.setImports(new ArrayList[Import]())
+    }  
+    
+    for ( (cl, companion) <- typeToCompanion) {
+      handleClassAndCompanion(cu, clazz.getMembers, cl, companion)
+    }   
+  }
+  
+  private def handleClassAndCompanion(cu: CompilationUnit, members: java.util.List[_ >: Type], clazz: Type, companion: Type) {
+    members.add(members.indexOf(clazz), companion)
     if (clazz.getMembers.isEmpty) {
-      cu.getTypes.remove(clazz)
+      members.remove(clazz)
     } else if (clazz.getMembers.size == 1) {
       clazz.getMembers.get(0) match {
         case c: Constructor => {
           if (c.getModifiers.isPrivate && isEmpty(c.getParameters)) {
-            cu.getTypes.remove(clazz)
+            members.remove(clazz)
           } 
         }
         case _ => 
@@ -46,13 +70,13 @@ class CompanionObject extends UnitTransformer {
     }
 
     // add import for companion object members, if class has not been removed
-    if (cu.getTypes.contains(clazz)) {
+    if (members.contains(clazz)) {
       var importDecl = new Import(clazz.getName, false, true)
       cu.getImports.add(importDecl)
     }
   }
 
-  private def getCompanionObject(cu: CompilationUnit, t: Type): Type = {
+  private def getCompanionObject(t: Type): Type = {
     if (t.getMembers == null) {
       return null
     }
@@ -63,6 +87,7 @@ class CompanionObject extends UnitTransformer {
     // add static members to class
     for (member <- t.getMembers) {
       val add = member match {
+        case t: Type => t.getModifiers.isStatic
         case f: Field => f.getModifiers.isStatic
         case m: Method => m.getModifiers.isStatic
         case i: Initializer => i.isStatic

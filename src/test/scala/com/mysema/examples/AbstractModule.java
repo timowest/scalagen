@@ -95,7 +95,7 @@ public abstract class AbstractModule {
                 namedInstances.put(name, instance);
                 return instance;    
             } else {
-                return null;
+                return (T)null;
             }            
         } else {
             throw new IllegalArgumentException(iface.getName() + " " + name + " is not registered");
@@ -115,7 +115,8 @@ public abstract class AbstractModule {
         // fallback to default constructor
         if (constructor == null) {
             try {
-                constructor = implementation.getConstructor();
+                // FIXME
+                constructor = implementation.getConstructor(Object.class);
             } catch (SecurityException e) {
                 throw new RuntimeException(e);
             } catch (NoSuchMethodException e) {
@@ -135,8 +136,6 @@ public abstract class AbstractModule {
             }
             try {
                 return (T) constructor.newInstance(args);
-
-                // TODO : populate fields as well?!?
 
             } catch (InstantiationException e) {
                 throw new RuntimeException(e);

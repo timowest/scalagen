@@ -33,6 +33,8 @@ object UnitTransformer {
   
   type Annotation = AnnotationExpr 
   
+  type AnnotationMember = AnnotationMemberDeclaration
+  
   type Assign = AssignExpr
   
   type Binary = BinaryExpr

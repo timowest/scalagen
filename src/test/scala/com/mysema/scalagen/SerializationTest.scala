@@ -127,6 +127,12 @@ class SerializationTest extends AbstractParserTest {
   }
   
   @Test
+  def Ops {
+    val sources = toScala[Ops]
+    assertContains(sources, "object Ops {", "object AggOps {")
+  }
+  
+  @Test
   def Reserved {
     val sources = toScala[Reserved]
     assertContains(sources, "`object`","`type`","`var`","`val`")

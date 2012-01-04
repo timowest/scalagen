@@ -7,9 +7,10 @@ public class Operators {
 //  return {val k = i; i = i + 1; k }
 //}    
     
-    int foo(int j){
-        int i = j;
-        return i++;
-    }
+// FIXME    
+//    int foo(int j){
+//        int i = j;
+//        return i++;
+//    }
 
 }

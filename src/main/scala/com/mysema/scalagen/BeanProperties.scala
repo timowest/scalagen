@@ -59,6 +59,9 @@ class BeanProperties extends UnitTransformer {
   }}
   
   private def transform(cu: CompilationUnit, t: Type) {
+    // transform sub types
+    t.getMembers.collect { case t: Type => t}.foreach(t => transform(cu, t))
+    
     // accessors
     val methods = t.getMembers.collect { case m: Method => m }
     val getters = methods.filter(m => isGetter(m) || isBooleanGetter(m))

@@ -24,6 +24,9 @@ class Constructors extends UnitTransformer {
   }
   
   private def transform(cu: CompilationUnit, t: Type) {
+    // transform sub types
+    t.getMembers.collect { case t: Type => t}.foreach(t => transform(cu, t))    
+    
     // get all constructors
     val constr = t.getMembers.collect { case c: Constructor => c }
       
