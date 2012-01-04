@@ -793,7 +793,7 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
     printJavadoc(n.getJavaDoc, arg)
     var hasOverride = printMemberAnnotations(n.getAnnotations, arg)
     printMethodModifiers(n.getModifiers)
-    if (hasOverride) {
+    if (hasOverride || isHashCode(n) || isEquals(n) || isToString(n)) {
       printer.print("override ")
     }
     printer.print("def ")
@@ -839,6 +839,18 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
     }
   }
 
+  private def isHashCode(n: MethodDeclaration): Boolean = {
+    n.getName == "hashCode" && isEmpty(n.getParameters) 
+  }
+  
+  private def isEquals(n: MethodDeclaration): Boolean = {
+    n.getName == "equals" && n.getParameters != null && n.getParameters.size == 1
+  }
+  
+  private def isToString(n: MethodDeclaration): Boolean = {
+    n.getName == "toString" && isEmpty(n.getParameters)
+  }
+  
   def visit(n: Parameter, arg: Context) {
     printAnnotations(n.getAnnotations, arg)
     printModifiers(n.getModifiers)
