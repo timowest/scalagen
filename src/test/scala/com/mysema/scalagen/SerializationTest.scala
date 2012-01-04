@@ -29,6 +29,12 @@ class SerializationTest extends AbstractParserTest {
   }
   
   @Test
+  def AnnotatedElementAdapter {
+    val sources = toScala[AnnotatedElementAdapter]
+    assertContains(sources, "for (element <- elements; annotation <- element.getAnnotations) {")
+  }
+  
+  @Test
   def ArrayConstructorExpression {
     val sources = toScala[ArrayConstructorExpression[_]]
     assertContains(sources, 

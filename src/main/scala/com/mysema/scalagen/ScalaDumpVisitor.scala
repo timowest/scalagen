@@ -1128,31 +1128,39 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
     printer.print(" <- ")
     n.getIterable.accept(this, arg)
     
-    def visitIfInFor(ifStmt: IfStmt): Boolean = {
-      if (ifStmt.getElseStmt == null) {
-        printer.print(" if ")
-        ifStmt.getCondition.accept(this, arg)
-        printer.print(") ")
-        ifStmt.getThenStmt.accept(this, arg)
-        true
-      } else {
-        false
-      }      
-    }
-    
-    if (n.getBody.isInstanceOf[BlockStmt]) {
-      val stmts = n.getBody.asInstanceOf[BlockStmt].getStmts
-      if (stmts.size == 1 && stmts.get(0).isInstanceOf[IfStmt]) {
-        if (visitIfInFor(stmts.get(0).asInstanceOf[IfStmt])) return
+    var body = n.getBody
+    while (isUnwrapped(body)) {
+      extractStmt(body) match {
+        case fe: ForeachStmt => {
+          printer.print("; ")
+          fe.getVariable.getVars.get(0).accept(this, arg)
+          printer.print(" <- ")
+          fe.getIterable.accept(this, arg)
+          body = fe.getBody
+        }
+        case ifStmt: IfStmt => {
+          printer.print(" if ")
+          ifStmt.getCondition.accept(this, arg)
+          body = ifStmt.getThenStmt
+        }
       }
-    } else if (n.getBody.isInstanceOf[IfStmt]) {
-      if (visitIfInFor(n.getBody.asInstanceOf[IfStmt])) return
     }
-    
+           
     printer.print(") ")
-    n.getBody.accept(this, arg)
+    body.accept(this, arg)
     
   }
+  
+  private def isUnwrapped(stmt: Statement): Boolean = { extractStmt(stmt) match {
+    case foreach: ForeachStmt => true
+    case ifStmt: IfStmt => ifStmt.getElseStmt() == null
+    case _ => false
+  }}
+  
+  private def extractStmt(stmt: Statement): Statement = { stmt match {
+    case b: BlockStmt => if (b.getStmts != null && b.getStmts.size == 1) b.getStmts().get(0) else b
+    case _ => stmt
+  }}
     
   def visit(n: ForStmt, arg: Context) {
     // init

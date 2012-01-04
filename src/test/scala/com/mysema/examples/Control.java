@@ -54,7 +54,23 @@ public class Control {
             }            
         }
     }
+    
+    public void forLoopWithIfAndFor() {
+        for (Integer i : integers) {
+            if (i > 0) {
+                for (Integer j : integers) {
+                    System.err.println(i + j);    
+                }                    
+            }            
+        }
+    }
         
-        
+    public void forLoopWithFor() {
+        for (Integer i : integers) {
+            for (Integer j : integers) {
+                System.err.println(i + j);    
+            }        
+        }
+    }  
 
 }
