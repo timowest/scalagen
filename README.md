@@ -1,4 +1,4 @@
-Scalagen - Java to Scala conversion
+= Scalagen - Java to Scala conversion =
 
 Add the following snippet to your Maven config to use Scalagen
 
