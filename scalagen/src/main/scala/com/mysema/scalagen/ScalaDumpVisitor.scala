@@ -142,7 +142,7 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
 
   private def printAnnotations(annotations: List[AnnotationExpr], arg: Context) {
     if (annotations != null) {
-      for (a <- annotations) {
+      for (a <- annotations if !SKIPPED_ANNOTATIONS.contains(a.getName.getName)) {
         a.accept(this, arg)
         printer.print(" ")
       }
@@ -222,7 +222,7 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
     printer.printLn()
     
     if (n.getPackage != null && !isEmpty(n.getPackage.getAnnotations)) {
-      printAnnotations(n.getPackage.getAnnotations, arg)
+      printMemberAnnotations(n.getPackage.getAnnotations, arg)
       printer.printLn("package object " + split(n.getPackage.getName)._2 + " {")
       printer.printLn("}")
       printer.printLn()

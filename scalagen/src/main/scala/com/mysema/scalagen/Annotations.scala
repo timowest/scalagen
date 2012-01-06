@@ -50,6 +50,7 @@ class Annotations extends UnitTransformerBase {
     // TODO : default values
     val params = n.getMembers.collect { case m: AnnotationMember => m }
       .map(m => new Parameter(0, m.getType, new VariableDeclaratorId(m.getName)))
+      
     val members = new ArrayList[BodyDeclaration]()
     if (!params.isEmpty) {
       val constructor = new Constructor()

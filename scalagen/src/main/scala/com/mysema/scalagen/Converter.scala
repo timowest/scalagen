@@ -39,10 +39,7 @@ class Converter(encoding: String, transformers: List[UnitTransformer]) {
   def convert(inFolder: File, outFolder: File) {
     val inFolderLength = inFolder.getPath.length + 1
     val inToOut = getJavaFiles(inFolder)
-      .map(in => (in, 
-      new File(outFolder, in.getPath.substring(inFolderLength, in.getPath.length-5)+".scala"))) 
-    
-    // TODO : rename package-info.java to package.scala
+      .map(in => (in, toOut(inFolderLength, outFolder, in))) 
       
     // create out folders
     inToOut.foreach(_._2.getParentFile.mkdirs() )  
@@ -62,7 +59,12 @@ class Converter(encoding: String, transformers: List[UnitTransformer]) {
     var visitor = new ScalaDumpVisitor()
     unit.accept(visitor, new Context())
     visitor.getSource
-  } 
+  }
+  
+  private def toOut(inFolderLength: Int, outFolder: File, in: File): File = {
+    val offset = if (in.getName == "package-info.java") 10 else 5
+    new File(outFolder, in.getPath.substring(inFolderLength, in.getPath.length-offset)+".scala")
+  }
   
   private def getJavaFiles(file: File): Seq[File] = {
     if (file.isDirectory) {
