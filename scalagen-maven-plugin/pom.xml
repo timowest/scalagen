@@ -19,6 +19,13 @@
     <mvn.version>2.2.1</mvn.version>
     <scala.version>2.9.1</scala.version>
   </properties>  
+  
+<licenses>
+    <license>
+      <name>LGPL 2.1</name>
+      <url>LICENSE.txt</url>
+    </license>
+  </licenses>    
 
   <dependencies>
     <dependency>

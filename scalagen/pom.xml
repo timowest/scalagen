@@ -15,6 +15,13 @@
 
   <inceptionYear>2011</inceptionYear>
   
+  <licenses>
+    <license>
+      <name>LGPL 2.1</name>
+      <url>LICENSE.txt</url>
+    </license>
+  </licenses>  
+  
   <properties>
     <commons.collections.version>4.01</commons.collections.version>
     <commons.lang.version>3.0.1</commons.lang.version>

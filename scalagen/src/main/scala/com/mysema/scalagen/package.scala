@@ -6,6 +6,19 @@ import japa.parser.ast.stmt._
 import _root_.scala.collection.JavaConversions
 import _root_.scala.collection.Set
 
+/*
+ * Copyright (C) 2011, Mysema Ltd
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ * 
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ */
 package object scalagen {
   
   val PROPERTY = 0x00001000;
