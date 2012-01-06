@@ -1155,12 +1155,12 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
   }
 
   def visit(n: ContinueStmt, arg: Context) {
-    printer.print("continue")
-    if (n.getId != null) {
-      printer.print(" ")
-      printer.print(n.getId)
-    }
-    printer.print(";")
+    printer.print("//continue")
+//    if (n.getId != null) {
+//      printer.print(" ")
+//      printer.print(n.getId)
+//    }
+//    printer.print(";")
   }
 
   def visit(n: DoStmt, arg: Context) {
