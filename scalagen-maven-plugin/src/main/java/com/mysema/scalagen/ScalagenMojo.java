@@ -22,7 +22,7 @@ import org.apache.maven.project.MavenProject;
 
 /**
  * @phase generate-sources
- * @goal scalagen 
+ * @goal main 
  *
  */
 public class ScalagenMojo extends AbstractMojo {

@@ -28,10 +28,10 @@ class CompanionObject extends UnitTransformer {
     if (cu.getTypes == null) {
       return cu
     }
-    
+            
     // track lower level companion objects
     cu.getTypes.foreach { t => handleType(cu,t) }
-        
+    
     // track top level companions
     val typeToCompanion = cu.getTypes.map(t => (t, getCompanionObject(t)))
       .filter(_._2 != null).toMap
@@ -43,6 +43,7 @@ class CompanionObject extends UnitTransformer {
     for ( (clazz, companion) <- typeToCompanion) {
       handleClassAndCompanion(cu, cu.getTypes, clazz, companion)
     }    
+    
     cu
   }
   
@@ -101,7 +102,7 @@ class CompanionObject extends UnitTransformer {
     // add static members to class
     for (member <- t.getMembers) {
       val add = member match {
-        case t: Type => t.getModifiers.isStatic
+        case t: Type => t.getModifiers.isStatic || t.getModifiers.isObject
         case f: Field => f.getModifiers.isStatic
         case m: Method => m.getModifiers.isStatic
         case i: Initializer => i.isStatic
