@@ -969,11 +969,17 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
       printer.indent()
       val s = n.getStmts.iterator()
       val returnOn = arg.returnOn
+      def print(stmt: Statement) {
+        stmt.accept(this,arg) 
+        printer.printLn()
+      }
       while (s.hasNext) {
         val stmt = s.next
         arg.returnOn = returnOn || s.hasNext
-        stmt.accept(this, arg)
-        printer.printLn()
+        stmt match {
+          case b: BlockStmt => b.getStmts.foreach(print) 
+          case _ => print(stmt)          
+        }
       }
       arg.returnOn = returnOn
       printer.unindent()

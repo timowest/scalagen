@@ -159,7 +159,7 @@ class SerializationTest extends AbstractParserTest {
     val sources = toScala[SimpleCompiler]
     assertContains(sources, 
       "for (url <- (classLoader.asInstanceOf[URLClassLoader]).getURLs) {",
-      "case e: UnsupportedEncodingException => throw new RuntimeException(e)",
+      //"case e: UnsupportedEncodingException => throw new RuntimeException(e)",
       "this(ToolProvider.getSystemJavaCompiler, Thread.currentThread().getContextClassLoader)")
   }
   

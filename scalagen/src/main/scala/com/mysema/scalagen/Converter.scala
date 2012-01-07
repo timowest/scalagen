@@ -21,6 +21,7 @@ import org.apache.commons.io.FileUtils
 object Converter {
   
   lazy val instance = new Converter("UTF-8",List[UnitTransformer](
+    Rethrows, 
     RemoveAsserts, 
     Annotations,    
     Enums,
