@@ -106,13 +106,8 @@ class BeanProperties extends UnitTransformer {
     }
     
     // add BeanProperty import, if properties have been found
-    if (!fields.isEmpty) {
-      if (cu.getImports == null) {
-        cu.setImports(new ArrayList[Import]())
-      }
-      if (!cu.getImports.contains(BEAN_PROPERTY_IMPORT)) {
-        cu.getImports.add(BEAN_PROPERTY_IMPORT)
-      }
+    if (!fields.isEmpty && !cu.getImports.contains(BEAN_PROPERTY_IMPORT)) {
+      cu.getImports.add(BEAN_PROPERTY_IMPORT)
     }
   }
 }

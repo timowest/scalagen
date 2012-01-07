@@ -15,20 +15,21 @@ package com.mysema.scalagen
 
 import java.io.File
 import japa.parser.JavaParser
-import japa.parser.ast.CompilationUnit
+import japa.parser.ast.{ImportDeclaration, CompilationUnit}
 import org.apache.commons.io.FileUtils
+import java.util.ArrayList
 
 object Converter {
   
   lazy val instance = new Converter("UTF-8",List[UnitTransformer](
     Rethrows, 
     RemoveAsserts, 
-    Annotations,    
+    Annotations,
     Enums,
     Primitives,
     SerialVersionUID,
     ControlStatements, 
-    CompanionObject,    
+    CompanionObject,
     BeanProperties, 
     Constructors, 
     Initializers))  
@@ -56,6 +57,9 @@ class Converter(encoding: String, transformers: List[UnitTransformer]) {
   }
     
   def toScala(unit: CompilationUnit): String = {
+    if (unit.getImports == null) {
+      unit.setImports(new ArrayList[ImportDeclaration]())  
+    }    
     val transformed = transformers.foldLeft(unit) { case (u,t) => t.transform(u) }    
     var visitor = new ScalaDumpVisitor()
     unit.accept(visitor, new Context())

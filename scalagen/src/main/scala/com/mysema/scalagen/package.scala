@@ -21,9 +21,10 @@ import _root_.scala.collection.Set
  */
 package object scalagen {
   
-  val PROPERTY = 0x00001000;
-  val LAZY     = 0x00002000;
-  val OBJECT   = 0x00004000;
+  val PROPERTY = 0x00001000
+  val LAZY     = 0x00002000
+  val OBJECT   = 0x00004000
+  val IMPLICIT = 0x00008000
     
   @inline
   def isEmpty(col: java.util.Collection[_]): Boolean = col == null || col.isEmpty
@@ -45,6 +46,7 @@ package object scalagen {
   class RichModifiers(i: Int) {
     def isAbstract = ModifierSet.isAbstract(i)
     def isFinal = ModifierSet.isFinal(i)
+    def isImplicit = ModifierSet.hasModifier(i, IMPLICIT)
     def isLazy = ModifierSet.hasModifier(i, LAZY)
     def isNative = ModifierSet.isNative(i)
     def isObject = ModifierSet.hasModifier(i, OBJECT)

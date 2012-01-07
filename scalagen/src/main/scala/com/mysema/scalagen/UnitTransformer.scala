@@ -13,12 +13,14 @@
  */
 package com.mysema.scalagen 
 
+import japa.parser.ast.Node
 import japa.parser.ast.body._
 import japa.parser.ast.expr._
 import japa.parser.ast.stmt._
 import japa.parser.ast.visitor.ModifierVisitorAdapter
 import japa.parser.ast.CompilationUnit
 import japa.parser.ast.ImportDeclaration
+import java.util.{List => JavaList, ArrayList}
 
 object UnitTransformer {
   
@@ -27,6 +29,13 @@ object UnitTransformer {
   
   @inline
   implicit def toVariableDeclaratorId(s: String) = new VariableDeclaratorId(s)
+  
+  @inline 
+  implicit def toBlock(s: Statement) = {
+    val block = new BlockStmt(new ArrayList[Statement]())
+    block.getStmts.add(s)
+    block
+  }
     
   @inline
   def getAssignment(s: Statement): Assign = {
@@ -39,6 +48,14 @@ object UnitTransformer {
       case _ => false
     }    
   }
+  
+  def isStatic(member: BodyDeclaration): Boolean = { member match {
+    case t: Type => t.getModifiers.isStatic || t.getModifiers.isObject
+    case f: Field => f.getModifiers.isStatic
+    case m: Method => m.getModifiers.isStatic
+    case i: Initializer => i.isStatic
+    case _ => false
+  } }
       
   val BEAN_PROPERTY_IMPORT = new Import("scala.reflect.BeanProperty", false, false)
 
@@ -91,6 +108,17 @@ object UnitTransformer {
   type Variable = VariableDeclarator
   
   type VariableDeclaration = VariableDeclarationExpr
+  
+  class ListBuilder[T <: Node](v: T) {
+    def asList: JavaList[T] = {
+      val list = new ArrayList[T]()
+      list.add(v)
+      list
+    }
+  }
+  
+  @inline
+  implicit def toListBuilder[T <: Node](v: T) = new ListBuilder[T](v)
   
 }
 

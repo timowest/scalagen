@@ -37,7 +37,7 @@ object ScalaDumpVisitor {
   
   private val PRIMITIVES = Set("Boolean","Byte","Character","Double","Float","Integer","Long","Short")
   
-  private val SHORT_FORM = Set("query","eq","ne","lt","until","gt","size","hasNext","toString","hashCode","equals","!=")
+  private val SHORT_FORM = Set("query","eq","ne","lt","until","gt","size","hasNext","toString","hashCode","equals","!=","keys","values")
   
   private val RESERVED = Set("def","match","object","type","val","var")
   
@@ -95,6 +95,10 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
     } else if (modifiers.isProtected) {
       printer.print("protected ")
     } else if (modifiers.isPublic) {
+    }
+    
+    if (modifiers.isImplicit) {
+      printer.print("implicit ")
     }
     
     if (modifiers.isAbstract) {
@@ -337,13 +341,14 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
         i.next().accept(this, arg)        
       }
     }
-    printer.printLn(" {")
-    printer.indent()
-    if (n.getMembers != null) {
+    
+    if (!isEmpty(n.getMembers)) {
+      printer.printLn(" {")
+      printer.indent()
       printMembers(n.getMembers, arg)
-    }
-    printer.unindent()
-    printer.print("}")
+      printer.unindent()
+      printer.print("}")
+    }    
   }
 
   private def getFirstConstructor(members: List[BodyDeclaration]): ConstructorDeclaration = {

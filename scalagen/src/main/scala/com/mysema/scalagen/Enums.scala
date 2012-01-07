@@ -26,12 +26,19 @@ object Enums extends Enums
 
 class Enums extends UnitTransformerBase {
   
+  private val enumerationType = new ClassOrInterfaceType("Enumeration")
+  
+  private val valType = new ClassOrInterfaceType("Val")
+  
+  private val valueType = new ClassOrInterfaceType("Value")
+  
   def transform(cu: CompilationUnit): CompilationUnit = {
     cu.accept(this, new Context()).asInstanceOf[CompilationUnit] 
   }  
     
   override def visit(n: EnumDeclaration, arg: Context) = {
     val clazz = new ClassOrInterface()
+    clazz.setExtends(enumerationType.asList)
     clazz.setName(n.getName)
     clazz.setModifiers(OBJECT)
     clazz.setMembers(createMembers(n))
@@ -40,17 +47,27 @@ class Enums extends UnitTransformerBase {
   
   private def createMembers(n: EnumDeclaration): JavaList[BodyDeclaration] = {
     val typeDecl = new ClassOrInterface(0, false, n.getName)
+    typeDecl.setExtends(valType.asList)
     typeDecl.setImplements(n.getImplements)
-    typeDecl.setMembers(n.getMembers)
+    typeDecl.setMembers(new ArrayList[BodyDeclaration])
+    typeDecl.getMembers.addAll(n.getMembers.filterNot(isStatic))
     
+    // entries
     val ty = new ClassOrInterfaceType(n.getName)
     val entries = n.getEntries.map(e => {
       val init = new ObjectCreationExpr(null, ty, e.getArgs)
       new FieldDeclaration(ModifierSet.FINAL, ty, new VariableDeclarator(e.getName, init)) })
         
+    // conversion function
+    val conversion = new MethodDeclaration(IMPLICIT, ty, "convertValue")
+    conversion.setBody(new Return(new CastExpr(ty, "v")))
+    conversion.setParameters(new Parameter(valueType, "v").asList)
+          
     val members = new ArrayList[BodyDeclaration]()
-    members.add(typeDecl)
-    members.addAll(entries)    
+    members.addAll(entries)
+    members.add(typeDecl)       
+    members.addAll(n.getMembers.filter(isStatic))
+    members.add(conversion)
     members
   }
     

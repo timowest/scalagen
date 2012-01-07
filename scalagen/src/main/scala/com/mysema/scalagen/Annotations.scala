@@ -35,21 +35,15 @@ class Annotations extends UnitTransformerBase {
   override def visit(n: AnnotationDeclaration, arg: Context) = {
     val clazz = new ClassOrInterface()
     clazz.setName(n.getName)    
-    clazz.setExtends(createExtends())
+    clazz.setExtends(staticAnnotationType.asList)
     clazz.setMembers(createMembers(n))
     clazz
-  }
-  
-  private def createExtends(): JavaList[ClassOrInterfaceType] = {
-    val list = new ArrayList[ClassOrInterfaceType]()
-    list.add(staticAnnotationType)
-    list
   }
   
   private def createMembers(n: AnnotationDeclaration): JavaList[BodyDeclaration] = {
     // TODO : default values
     val params = n.getMembers.collect { case m: AnnotationMember => m }
-      .map(m => new Parameter(0, m.getType, new VariableDeclaratorId(m.getName)))
+      .map(m => new Parameter(PROPERTY, m.getType, new VariableDeclaratorId(m.getName)))
       
     val members = new ArrayList[BodyDeclaration]()
     if (!params.isEmpty) {
