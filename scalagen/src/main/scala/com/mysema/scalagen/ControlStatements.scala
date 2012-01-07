@@ -13,7 +13,7 @@
  */
 package com.mysema.scalagen
 
-import japa.parser.ast.CompilationUnit
+import japa.parser.ast.{CompilationUnit, Node}
 import japa.parser.ast.body._
 import japa.parser.ast.stmt._
 import japa.parser.ast.expr._
@@ -24,7 +24,7 @@ import UnitTransformer._
 object ControlStatements extends ControlStatements
 
 /**
- * ControlStatements transform ForStmt into Foreach
+ * ControlStatements transform ForStmt, SwitchEntryStmt and If statements
  */
 class ControlStatements extends UnitTransformerBase {
   
@@ -53,6 +53,27 @@ class ControlStatements extends UnitTransformerBase {
     }    
   }
   
+  override def visit(n: IfStmt, arg: Context): Node = {
+    // transform
+    //   if (contition) target = x else target = y
+    // into
+    //   target = if (condition) e else y    
+    if (n.getElseStmt != null) {
+      val thenStmt = extractStmt(n.getThenStmt)
+      val elseStmt = extractStmt(n.getElseStmt)
+      if (isAssignment(thenStmt) && isAssignment(elseStmt)) {
+        val thenAssign = getAssignment(thenStmt)
+        val elseAssign = getAssignment(elseStmt)
+        if (thenAssign.getTarget == elseAssign.getTarget) {
+          return new ExpressionStmt(new Assign(thenAssign.getTarget, 
+              new Conditional(n.getCondition, thenAssign.getValue, elseAssign.getValue),
+              AssignExpr.Operator.assign))
+        }
+      }
+    } 
+    super.visit(n, arg)    
+  }
+  
   override def visit(n: SwitchEntryStmt, arg: Context) = {    
     // remove break
     val size = if (n.getStmts == null) 0 else n.getStmts.size
@@ -60,6 +81,12 @@ class ControlStatements extends UnitTransformerBase {
       n.getStmts.remove(size-1)
     }
     n
+  }
+  
+    // TODO : to common place
+  private def extractStmt(stmt: Statement): Statement = stmt match {
+    case b: BlockStmt => if (b.getStmts != null && b.getStmts.size == 1) b.getStmts.get(0) else b
+    case _ => stmt
   }
   
 }

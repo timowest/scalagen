@@ -102,6 +102,12 @@ class SerializationTest extends AbstractParserTest {
   }
   
   @Test
+  def IfElse {
+    val sources = toScala[IfElse]
+    assertContains(sources, "property = if (System.currentTimeMillis() > 0) \"y\" else \"z\"")
+  }
+  
+  @Test
   def Immutable {
     val sources = toScala[Immutable]
     assertContains(sources, 

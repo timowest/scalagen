@@ -1217,16 +1217,17 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
     
   }
   
-  private def isUnwrapped(stmt: Statement): Boolean = { extractStmt(stmt) match {
+  private def isUnwrapped(stmt: Statement): Boolean = extractStmt(stmt) match {
     case foreach: ForeachStmt => true
     case ifStmt: IfStmt => ifStmt.getElseStmt() == null
     case _ => false
-  }}
+  }
   
-  private def extractStmt(stmt: Statement): Statement = { stmt match {
+  // TODO : to common place
+  private def extractStmt(stmt: Statement): Statement = stmt match {
     case b: BlockStmt => if (b.getStmts != null && b.getStmts.size == 1) b.getStmts.get(0) else b
     case _ => stmt
-  }}
+  }
     
   def visit(n: ForStmt, arg: Context) {
     // init

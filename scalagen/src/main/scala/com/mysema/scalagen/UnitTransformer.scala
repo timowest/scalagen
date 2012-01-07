@@ -74,6 +74,8 @@ object UnitTransformer {
   
   type ClassOrInterface = ClassOrInterfaceDeclaration
   
+  type Conditional = ConditionalExpr
+  
   type Constructor = ConstructorDeclaration
   
   type ConstructorInvocation = ExplicitConstructorInvocationStmt
