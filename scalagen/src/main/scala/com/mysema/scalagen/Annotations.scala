@@ -24,6 +24,10 @@ import japa.parser.ast.`type`.ClassOrInterfaceType
 
 object Annotations extends Annotations
 
+/**
+ * Annotations turns Annotation type declarations into normal classes which extend
+ * StaticAnnotation
+ */
 class Annotations extends UnitTransformerBase {
   
   private val staticAnnotationType = new ClassOrInterfaceType("StaticAnnotation")

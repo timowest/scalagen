@@ -23,6 +23,9 @@ import UnitTransformer._
 
 object ControlStatements extends ControlStatements
 
+/**
+ * ControlStatements transform ForStmt into Foreach
+ */
 class ControlStatements extends UnitTransformerBase {
   
   def transform(cu: CompilationUnit): CompilationUnit = {

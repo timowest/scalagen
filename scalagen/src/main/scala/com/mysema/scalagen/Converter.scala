@@ -36,6 +36,9 @@ object Converter {
   
 }
 
+/**
+ * Converter convers Java sources into Scala sources
+ */
 class Converter(encoding: String, transformers: List[UnitTransformer]) {
     
   def convert(inFolder: File, outFolder: File) {

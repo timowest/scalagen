@@ -37,7 +37,7 @@ object ScalaDumpVisitor {
   
   private val PRIMITIVES = Set("Boolean","Byte","Character","Double","Float","Integer","Long","Short")
   
-  private val SHORT_FORM = Set("query","eq","ne","lt","until","gt","size","hasNext","toString","hashCode","equals","!=","keys","values")
+  private val SHORT_FORM = Set("query","eq","ne","lt","until","gt","size","hasNext","toString","hashCode","equals","!=","keys","values","length")
   
   private val RESERVED = Set("def","match","object","type","val","var")
   
@@ -59,7 +59,7 @@ class Context {
 }
 
 /**
- * @author tiwe
+ * ScalaDumpVisitor is a serializing visitor for CompilationUnit instances
  *
  */
 class ScalaDumpVisitor extends VoidVisitor[Context] {
@@ -67,10 +67,8 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
     
   private val printer = new SourcePrinter()
 
-  def getSource: String = {
-    printer.getSource
-  }
-
+  def getSource: String = printer.source
+    
   private def print(node: Node, arg: Context): String = {
     val v = new ScalaDumpVisitor()
     node.accept(v, arg)
@@ -328,6 +326,10 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
     if (n.getImplements != null) {
       superTypes.addAll(n.getImplements)
     }
+    if (printer.lineLength > 80) {
+      printer.printLn()
+      printer.print("   ")
+    }    
     if (!superTypes.isEmpty) {
       printer.print(" extends ")
       var i = superTypes.iterator()
@@ -605,10 +607,10 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
     }
     printer.print(symbol)
     printer.print(" ")
-    if (print(n.getLeft, arg).length > 50) {
+    if (print(n.getLeft, arg).length > 50 || print(n.getRight, arg).length > 50) {
       printer.printLn()
       printer.print("  ")
-    }
+    }    
     n.getRight.accept(this, arg)
   }
 
@@ -642,9 +644,13 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
   }
 
   def visit(n: EnclosedExpr, arg: Context) {
-    printer.print("(")
-    n.getInner.accept(this, arg)
-    printer.print(")")
+    if (n.getInner.isInstanceOf[CastExpr]) {
+      n.getInner.accept(this, arg)
+    } else {
+      printer.print("(")
+      n.getInner.accept(this, arg)
+      printer.print(")")  
+    }    
   }
 
   def visit(n: FieldAccessExpr, arg: Context) {
@@ -850,7 +856,7 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
       printer.print("override ")
     }
     printer.print("def ")
-    printer.print(n.getName)
+    visitName(n.getName)
     printTypeParameters(n.getTypeParameters, arg)
     printer.print("(")
     if (n.getParameters != null) {

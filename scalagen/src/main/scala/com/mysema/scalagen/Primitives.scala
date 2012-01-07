@@ -23,6 +23,9 @@ import UnitTransformer._
 
 object Primitives extends Primitives
 
+/**
+ * Primitives modifies primitive type related constants and method calls
+ */
 class Primitives  extends UnitTransformerBase {
   
   private val TRUE = new BooleanLiteral(true)

@@ -23,6 +23,9 @@ import UnitTransformer._
 
 object Rethrows extends Rethrows
 
+/**
+ * Rethrows unwraps try/catch blocks with simple rethrows
+ */
 class Rethrows extends UnitTransformerBase {
   
   def transform(cu: CompilationUnit): CompilationUnit = {
@@ -39,7 +42,7 @@ class Rethrows extends UnitTransformerBase {
   
   private def isPrinted(c: CatchClause): Boolean = {
     val block = c.getCatchBlock()
-    isEmpty(block.getStmts) || block.getStmts.size > 1 || !block.getStmts.get(0).isInstanceOf[ThrowStmt]
+    block.size > 1 || (block.size == 1 && !block(0).isInstanceOf[ThrowStmt])
   }
     
 }

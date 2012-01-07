@@ -26,6 +26,10 @@ import UnitTransformer._
 
 object BeanProperties extends BeanProperties
 
+/**
+ * BeanProperties turns field + accessor combinations into @BeanPropert annotated 
+ * Scala properties
+ */
 class BeanProperties extends UnitTransformer {
     
   def transform(cu: CompilationUnit): CompilationUnit = {
@@ -39,8 +43,8 @@ class BeanProperties extends UnitTransformer {
     method.getName.startsWith("get") && !method.getModifiers.isPrivate && 
     isEmpty(method.getParameters) && 
     !(method.getType.isInstanceOf[VoidType]) &&
-    method.getBody != null &&method.getBody.getStmts != null &&
-    method.getBody.getStmts.size == 1 && isReturnFieldStmt(method.getBody.getStmts()(0))
+    method.getBody != null && method.getBody.size == 1 &&
+    isReturnFieldStmt(method.getBody()(0))
   }
   
   private def isBooleanGetter(method: Method): Boolean = {
@@ -48,28 +52,28 @@ class BeanProperties extends UnitTransformer {
     isEmpty(method.getParameters) && 
     method.getType.isInstanceOf[PrimitiveType] && 
     (method.getType.asInstanceOf[PrimitiveType]).getType == Primitive.Boolean &&
-    method.getBody != null && method.getBody.getStmts != null &&
-    method.getBody.getStmts.size == 1 && isReturnFieldStmt(method.getBody.getStmts()(0))
+    method.getBody != null && method.getBody.size == 1 && 
+    isReturnFieldStmt(method.getBody()(0))
   }
     
   private def isSetter(method: Method): Boolean = {
     method.getName.startsWith("set") && 
     (method.getParameters != null && method.getParameters.size == 1) && 
     method.getType.isInstanceOf[VoidType] &&
-    method.getBody != null && method.getBody.getStmts != null &&
-    method.getBody.getStmts.size == 1 && isSetFieldStmt(method.getBody.getStmts()(0))
+    method.getBody != null && method.getBody.size == 1 && 
+    isSetFieldStmt(method.getBody()(0))
   }
     
-  private def isReturnFieldStmt(stmt: Statement): Boolean = { stmt match {
+  private def isReturnFieldStmt(stmt: Statement): Boolean = stmt match {
     case r: Return => r.getExpr.isInstanceOf[Name] || r.getExpr.isInstanceOf[FieldAccess]
     case _ => false
-  }}
+  }
   
-  private def isSetFieldStmt(stmt: Statement): Boolean = { stmt match {
+  private def isSetFieldStmt(stmt: Statement): Boolean = stmt match {
     case e: ExpressionStmt => e.getExpression.isInstanceOf[Assign] && 
       e.getExpression.asInstanceOf[Assign].getOperator.toString == "assign"
     case _ => false
-  }}
+  }
   
   private def transform(cu: CompilationUnit, t: Type) {
     // transform sub types

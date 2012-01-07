@@ -19,7 +19,7 @@ class SerializationTest extends AbstractParserTest {
     val sources = toScala[AbstractCodeWriter[_]]
     assertContains(sources,
       "abstract class AbstractCodeWriter[T <: AbstractCodeWriter[T]]" +
-      "(val appendable: Appendable, val spaces: Int) extends Appendable {")
+      "(val appendable: Appendable, val spaces: Int)\n    extends Appendable {")
   }
   
   @Test
@@ -158,7 +158,7 @@ class SerializationTest extends AbstractParserTest {
   def SimpleCompiler {
     val sources = toScala[SimpleCompiler]
     assertContains(sources, 
-      "for (url <- (classLoader.asInstanceOf[URLClassLoader]).getURLs) {",
+      "for (url <- classLoader.asInstanceOf[URLClassLoader].getURLs) {",
       //"case e: UnsupportedEncodingException => throw new RuntimeException(e)",
       "this(ToolProvider.getSystemJavaCompiler, Thread.currentThread().getContextClassLoader)")
   }

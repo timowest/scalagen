@@ -20,7 +20,7 @@ import japa.parser.ast.stmt._
 import japa.parser.ast.visitor.ModifierVisitorAdapter
 import japa.parser.ast.CompilationUnit
 import japa.parser.ast.ImportDeclaration
-import java.util.{List => JavaList, ArrayList}
+import java.util.{Collection => JavaCollection, List => JavaList, ArrayList}
 
 object UnitTransformer {
   
@@ -42,20 +42,19 @@ object UnitTransformer {
     s.asInstanceOf[ExpressionStmt].getExpression.asInstanceOf[Assign]
   }
   
-  def isAssignment(s: Statement): Boolean = { s match {
-      case s: ExpressionStmt => s.getExpression.isInstanceOf[Assign] && 
-         s.getExpression().asInstanceOf[Assign].getOperator.toString == "assign"
-      case _ => false
-    }    
+  def isAssignment(s: Statement): Boolean = s match {
+    case s: ExpressionStmt => s.getExpression.isInstanceOf[Assign] && 
+       s.getExpression().asInstanceOf[Assign].getOperator.toString == "assign"
+    case _ => false
   }
   
-  def isStatic(member: BodyDeclaration): Boolean = { member match {
+  def isStatic(member: BodyDeclaration): Boolean = member match {
     case t: Type => t.getModifiers.isStatic || t.getModifiers.isObject
     case f: Field => f.getModifiers.isStatic
     case m: Method => m.getModifiers.isStatic
     case i: Initializer => i.isStatic
     case _ => false
-  } }
+  }
       
   val BEAN_PROPERTY_IMPORT = new Import("scala.reflect.BeanProperty", false, false)
 
@@ -109,6 +108,8 @@ object UnitTransformer {
   
   type VariableDeclaration = VariableDeclarationExpr
   
+  implicit def toListBuilder[T <: Node](v: T) = new ListBuilder[T](v)
+  
   class ListBuilder[T <: Node](v: T) {
     def asList: JavaList[T] = {
       val list = new ArrayList[T]()
@@ -117,8 +118,16 @@ object UnitTransformer {
     }
   }
   
-  @inline
-  implicit def toListBuilder[T <: Node](v: T) = new ListBuilder[T](v)
+  implicit def toRichBlock(b: BlockStmt) = new RichBlockStmt(b)
+  
+  class RichBlockStmt(b: BlockStmt) {
+    def add(s: Statement) = b.getStmts.add(s)
+    def apply(i: Int) = b.getStmts.get(i)
+    def isEmpty = b.getStmts == null || b.getStmts.isEmpty
+    def remove(s: Statement) = b.getStmts.remove(s)
+    def removeAll(s: java.util.Collection[Statement]) = b.getStmts.removeAll(s)
+    def size = if (b.getStmts != null) b.getStmts.size else 0
+  }
   
 }
 

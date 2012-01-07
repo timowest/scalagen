@@ -20,6 +20,9 @@ import UnitTransformer._
 
 object CompanionObject extends CompanionObject
 
+/**
+ * CompanionObject moves static members into companion objects
+ */
 class CompanionObject extends UnitTransformer {
 
   def transform(cu: CompilationUnit): CompilationUnit = {

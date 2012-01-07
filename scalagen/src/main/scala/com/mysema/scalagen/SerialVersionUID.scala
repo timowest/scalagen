@@ -19,6 +19,9 @@ import UnitTransformer._
 
 object SerialVersionUID extends SerialVersionUID
 
+/**
+ * SerialVersionUID turns serialVersionUID fields into annotations
+ */
 class SerialVersionUID extends UnitTransformer {
   
   def transform(cu: CompilationUnit): CompilationUnit = {

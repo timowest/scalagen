@@ -22,6 +22,9 @@ import UnitTransformer._
 
 object Constructors extends Constructors
 
+/**
+ * Constructors reorders and normalizes constructors
+ */
 class Constructors extends UnitTransformer {
    
   def transform(cu: CompilationUnit): CompilationUnit = {
@@ -48,8 +51,8 @@ class Constructors extends UnitTransformer {
     }
     
     // get first without delegating
-    val first = constr.find( c => 
-      isEmpty(c.getBlock.getStmts) || !isThisConstructor(c.getBlock.getStmts.get(0)))
+    val first = constr.find( c =>
+      c.getBlock.isEmpty || !isThisConstructor(c.getBlock()(0)))
     
     // move in front of others
     first.filter(_ != constr(0)).foreach { c =>
@@ -60,12 +63,14 @@ class Constructors extends UnitTransformer {
     // copy initializer, if constructor block has non-constructor statements
     val c = first.getOrElse(constr(0))  
         
-    if (!isEmpty(c.getBlock.getStmts) && 
+    if (!c.getBlock.isEmpty &&  
         !c.getBlock.getStmts.filter(!_.isInstanceOf[ConstructorInvocation]).isEmpty) {
       
       processStatements(cu, t, c)
       
-      if (!isEmpty(c.getBlock.getStmts)) {
+      if (!c.getBlock.isEmpty && 
+          !(c.getBlock.size == 1 && c.getBlock()(0).isInstanceOf[ConstructorInvocation] &&
+          !c.getBlock()(0).asInstanceOf[ConstructorInvocation].isThis())) {
         val initializer = new Initializer(false, c.getBlock)
         t.getMembers.add(t.getMembers.indexOf(c), initializer)  
       }      
@@ -74,7 +79,7 @@ class Constructors extends UnitTransformer {
     // add missing delegations
     t.getMembers.collect { case c: Constructor => c }.filter(_ != c)
       .foreach { c =>
-        if (!isEmpty(c.getBlock.getStmts) && !c.getBlock.getStmts.get(0).isInstanceOf[ConstructorInvocation]) {
+        if (!c.getBlock.isEmpty && !c.getBlock()(0).isInstanceOf[ConstructorInvocation]) {
           c.getBlock.getStmts.add(0, new ConstructorInvocation(true, null, null))
         }
       }
@@ -109,7 +114,7 @@ class Constructors extends UnitTransformer {
           } else { // field = ?!?
             variables(namedTarget.getName).setInit(assign.getValue)              
           }          
-          c.getBlock.getStmts.remove(s)
+          c.getBlock.remove(s)
         }
       }
     }
@@ -134,7 +139,7 @@ class Constructors extends UnitTransformer {
         // remove statement, put init to field
         variables(fieldAccess.getField).setInit(assign.getValue)            
       }            
-      c.getBlock.getStmts.remove(s)  
+      c.getBlock.remove(s)  
     }
   }
   

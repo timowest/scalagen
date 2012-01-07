@@ -24,6 +24,9 @@ import japa.parser.ast.`type`.ClassOrInterfaceType
 
 object Enums extends Enums
 
+/**
+ * Enums converts Java enum type declarations into Scala enumerations
+ */
 class Enums extends UnitTransformerBase {
   
   private val enumerationType = new ClassOrInterfaceType("Enumeration")

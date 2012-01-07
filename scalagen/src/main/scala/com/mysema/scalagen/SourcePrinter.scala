@@ -18,7 +18,9 @@ package com.mysema.scalagen
  *
  */
 class SourcePrinter {
-
+  
+  private var offset = 0
+  
   private var level = 0
 
   private var indented = false
@@ -47,16 +49,19 @@ class SourcePrinter {
 
   def printLn(arg: String) {
     print(arg)
-    printLn()
+    printLn()    
   }
 
   def printLn() {
     buf.append("\n")
+    offset = buf.length
     indented = false
   }
 
-  def getSource(): String = buf.toString()
+  def source: String = buf.toString
+  
+  def lineLength = buf.length - offset
 
-  override def toString(): String = getSource
+  override def toString(): String = source
   
 }

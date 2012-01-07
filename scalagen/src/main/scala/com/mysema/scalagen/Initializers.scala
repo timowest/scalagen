@@ -22,6 +22,9 @@ import UnitTransformer._
 
 object Initializers extends Initializers
 
+/**
+ * Initializers normalizes initializer blocks
+ */
 class Initializers extends UnitTransformer {
   
   def transform(cu: CompilationUnit): CompilationUnit = {
@@ -53,11 +56,11 @@ class Initializers extends UnitTransformer {
           }
         }
         
-        i.getBlock.getStmts.removeAll(stmts)      
+        i.getBlock.removeAll(stmts)      
       }      
       
       // remove empty initializers
-      for (i <- initializers if i.getBlock.getStmts.isEmpty) {
+      for (i <- initializers if i.getBlock.isEmpty) {
         t.getMembers.remove(i)
       }
     }

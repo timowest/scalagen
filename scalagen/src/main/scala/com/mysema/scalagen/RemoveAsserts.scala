@@ -23,6 +23,9 @@ import UnitTransformer._
 
 object RemoveAsserts extends RemoveAsserts
 
+/**
+ * RemoveAsserts unwraps assertion method call
+ */
 class RemoveAsserts extends UnitTransformerBase {
   
   private val methods = Set("hasLength","hasText","notEmpty","notNull") 
