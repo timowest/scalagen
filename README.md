@@ -15,3 +15,6 @@ To convert main sources run
 and to convert test sources run 
 
     mvn scalagen:scalagentest
+
+The conversion results are to be seen as a starting point for the Java to Scala conversion. 
+Some elements are not transformed correctly for various reasons and will need manual intervention.
