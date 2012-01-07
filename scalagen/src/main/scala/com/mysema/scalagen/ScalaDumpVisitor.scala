@@ -504,7 +504,7 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
   }
 
   def visit(n: ArrayInitializerExpr, arg: Context) {
-    printer.print("(")
+    printer.print("Array(")
     if (n.getValues != null) {
       var i = n.getValues.iterator()
       while (i.hasNext) {
@@ -531,26 +531,26 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
     printer.print(")")
   }
 
-  def visit(n: ArrayCreationExpr, arg: Context) {
+  def visit(n: ArrayCreationExpr, arg: Context) {    
     if (n.getDimensions != null) {
-      printer.print("new ")  
-    }    
-    if (arg.assignType != null) {
+      printer.print("new ")
+      
+      if (arg.assignType != null) {
         arg.assignType.accept(this, arg) 
-    } else {
-      val max = if (n.getDimensions != null) n.getArrayCount + 1 else n.getArrayCount        
-      for (i <- 0 until max) {
-        printer.print("Array[")
-      }
-      val typeArg = arg.typeArg
-      arg.typeArg = true
-      n.getType.accept(this, arg)
-      arg.typeArg = typeArg
-      for (i <- 0 until max) {
-        printer.print("]")
-      }
-    }    
-    if (n.getDimensions != null) {
+      } else {
+        val max = if (n.getDimensions != null) n.getArrayCount + 1 else n.getArrayCount        
+        for (i <- 0 until max) {
+          printer.print("Array[")
+        }
+        val typeArg = arg.typeArg
+        arg.typeArg = true
+        n.getType.accept(this, arg)
+        arg.typeArg = typeArg
+        for (i <- 0 until max) {
+          printer.print("]")
+        }
+      }       
+      
       printer.print(n.getDimensions.map(print(_,arg)).mkString("(",", ",")"))
     } else {
       n.getInitializer.accept(this, arg)
