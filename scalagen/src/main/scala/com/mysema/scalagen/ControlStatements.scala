@@ -18,7 +18,7 @@ import japa.parser.ast.body._
 import japa.parser.ast.stmt._
 import japa.parser.ast.expr._
 import japa.parser.ast.visitor._
-import java.util.{ ArrayList, Collections }
+import java.util.ArrayList
 import UnitTransformer._
 
 object ControlStatements extends ControlStatements
@@ -82,11 +82,5 @@ class ControlStatements extends UnitTransformerBase {
     }
     n
   }
-  
-    // TODO : to common place
-  private def extractStmt(stmt: Statement): Statement = stmt match {
-    case b: BlockStmt => if (b.getStmts != null && b.getStmts.size == 1) b.getStmts.get(0) else b
-    case _ => stmt
-  }
-  
+    
 }

@@ -18,9 +18,10 @@ import japa.parser.ast.body._
 import japa.parser.ast.stmt._
 import japa.parser.ast.expr._
 import japa.parser.ast.visitor._
-import java.util.{ List => JavaList, ArrayList, Collections }
-import UnitTransformer._
 import japa.parser.ast.`type`.ClassOrInterfaceType
+import java.util.ArrayList
+import UnitTransformer._
+
 
 object Annotations extends Annotations
 

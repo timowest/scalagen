@@ -6,6 +6,7 @@ import japa.parser.ParseException
 import japa.parser.ast.CompilationUnit
 import org.junit.Test
 import com.mysema.examples._
+import UnitTransformer._
 
 class CompanionObjectTest extends AbstractParserTest {
 

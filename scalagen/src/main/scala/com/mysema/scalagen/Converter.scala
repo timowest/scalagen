@@ -21,6 +21,9 @@ import java.util.ArrayList
 
 object Converter {
   
+  /**
+   * default instance for Converter type
+   */
   lazy val instance = new Converter("UTF-8",List[UnitTransformer](
     Rethrows, 
     RemoveAsserts, 
@@ -37,7 +40,7 @@ object Converter {
 }
 
 /**
- * Converter convers Java sources into Scala sources
+ * Converter converts Java sources into Scala sources
  */
 class Converter(encoding: String, transformers: List[UnitTransformer]) {
     

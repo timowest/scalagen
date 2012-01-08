@@ -15,7 +15,7 @@ package com.mysema.scalagen
 
 import japa.parser.ast.CompilationUnit
 import japa.parser.ast.body.{BodyDeclaration, ModifierSet}
-import java.util.{List => JavaList, ArrayList, Map, HashMap}
+import java.util.ArrayList
 import UnitTransformer._
 
 object CompanionObject extends CompanionObject

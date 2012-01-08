@@ -62,7 +62,7 @@ class Context {
  * ScalaDumpVisitor is a serializing visitor for CompilationUnit instances
  *
  */
-class ScalaDumpVisitor extends VoidVisitor[Context] {
+class ScalaDumpVisitor extends VoidVisitor[Context] with Helpers {
   import ScalaDumpVisitor._
     
   private val printer = new SourcePrinter()
@@ -897,18 +897,6 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
       }      
     }
   }
-
-  private def isHashCode(n: MethodDeclaration): Boolean = {
-    n.getName == "hashCode" && isEmpty(n.getParameters) 
-  }
-  
-  private def isEquals(n: MethodDeclaration): Boolean = {
-    n.getName == "equals" && n.getParameters != null && n.getParameters.size == 1
-  }
-  
-  private def isToString(n: MethodDeclaration): Boolean = {
-    n.getName == "toString" && isEmpty(n.getParameters)
-  }
   
   def visit(n: Parameter, arg: Context) {
     printAnnotations(n.getAnnotations, arg)
@@ -1222,13 +1210,7 @@ class ScalaDumpVisitor extends VoidVisitor[Context] {
     case ifStmt: IfStmt => ifStmt.getElseStmt() == null
     case _ => false
   }
-  
-  // TODO : to common place
-  private def extractStmt(stmt: Statement): Statement = stmt match {
-    case b: BlockStmt => if (b.getStmts != null && b.getStmts.size == 1) b.getStmts.get(0) else b
-    case _ => stmt
-  }
-    
+      
   def visit(n: ForStmt, arg: Context) {
     // init
     if (n.getInit != null) {
