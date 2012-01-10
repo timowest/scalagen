@@ -31,17 +31,22 @@ class RemoveAsserts extends UnitTransformerBase {
   private val methods = Set("hasLength","hasText","notEmpty","notNull") 
   
   def transform(cu: CompilationUnit): CompilationUnit = {
-    cu.accept(this, new Context()).asInstanceOf[CompilationUnit] 
+    cu.accept(this, cu).asInstanceOf[CompilationUnit] 
   }  
     
   // TODO : don't remove method calls when used as statements
   
-  override def visit(n: MethodCall, arg: Context) = {
-    if (methods.contains(n.getName) && n.getScope != null && n.getScope.toString == "Assert") {
-      n.getArgs.get(0)
-    } else {
-      super.visit(n, arg)
-    } 
+  override def visit(n: MethodCall, arg: CompilationUnit) = n match {
+    case Method("Assert", _, a :: rest) => a.accept(this, arg)
+    case _ => super.visit(n, arg)
   }
+  
+//  override def visit(n: MethodCall, arg: CompilationUnit) = {
+//    if (methods.contains(n.getName) && n.getScope != null && n.getScope.toString == "Assert") {
+//      n.getArgs.get(0)
+//    } else {
+//      super.visit(n, arg)
+//    } 
+//  }
   
 }

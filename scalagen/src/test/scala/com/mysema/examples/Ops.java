@@ -20,8 +20,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
-import com.mysema.commons.lang.Assert;
-
 /**
  * Ops provides the operators for the fluent query grammar.
  *
@@ -239,82 +237,83 @@ public final class Ops {
         private QuantOps() {}
     }
     
-    private Ops() {}
-}
+    /**
+     * Operator represents operator symbols
+     *
+     * @author tiwe
+     *
+     * @param <T> related expression type
+     */
+    interface Operator<T> extends Serializable{
 
-/**
- * Operator represents operator symbols
- *
- * @author tiwe
- *
- * @param <T> related expression type
- */
-interface Operator<T> extends Serializable{
+        /**
+         * Get the unique id for this Operator
+         *
+         * @return
+         */
+        String getId();
+
+        /**
+         * Get the types related to this operator symbols
+         *
+         * @return
+         */
+        List<Class<?>> getTypes();
+
+    }
 
     /**
-     * Get the unique id for this Operator
-     *
-     * @return
+     * OperatorImpl is the default implementation of the {@link Operator}  interface
      */
-    String getId();
+    static class OperatorImpl<T> implements Operator<T> {
 
-    /**
-     * Get the types related to this operator symbols
-     *
-     * @return
-     */
-    List<Class<?>> getTypes();
+        private static final long serialVersionUID = -2435035383548549877L;
 
-}
+        private final String id;
+        
+        private final List<Class<?>> types;
 
-/**
- * OperatorImpl is the default implementation of the {@link Operator}  interface
- */
-class OperatorImpl<T> implements Operator<T> {
+        public OperatorImpl(String id, Class<?>... types) {
+            this(id, Arrays.<Class<?>> asList(types));
+        }
 
-    private static final long serialVersionUID = -2435035383548549877L;
+        public OperatorImpl(String id, List<Class<?>> types) {
+            this.id = id;
+            this.types = types;
+        }
 
-    private final String id;
-    
-    private final List<Class<?>> types;
-
-    public OperatorImpl(String id, Class<?>... types) {
-        this(id, Arrays.<Class<?>> asList(types));
-    }
-
-    public OperatorImpl(String id, List<Class<?>> types) {
-        this.id = id;
-        this.types = types;
-    }
-
-    @Override
-    public String getId(){
-        return id;
-    }
-    
-    @Override
-    public List<Class<?>> getTypes() {
-        return types;
-    }
-    
-    @Override
-    public boolean equals(Object o){
-        if (o == this) {
-            return true;
-        } else if (o instanceof Operator<?>) {
-            return ((Operator<?>)o).getId().equals(id);
-        } else {
-            return false;
+        @Override
+        public String getId(){
+            return id;
+        }
+        
+        @Override
+        public List<Class<?>> getTypes() {
+            return types;
+        }
+        
+        @Override
+        public boolean equals(Object o){
+            if (o == this) {
+                return true;
+            } else if (o instanceof Operator<?>) {
+                return ((Operator<?>)o).getId().equals(id);
+            } else {
+                return false;
+            }
+        }
+        
+        @Override
+        public int hashCode(){
+            return id.hashCode();
+        }
+        
+        @Override
+        public String toString(){
+            return id;
         }
     }
     
-    @Override
-    public int hashCode(){
-        return id.hashCode();
-    }
-    
-    @Override
-    public String toString(){
-        return id;
-    }
+    private Ops() {}
 }
+

@@ -13,7 +13,7 @@
  */
 package com.mysema.scalagen
 
-import japa.parser.ast.CompilationUnit
+import japa.parser.ast.{CompilationUnit,Node}
 import japa.parser.ast.body._
 import japa.parser.ast.stmt._
 import japa.parser.ast.expr._
@@ -29,18 +29,18 @@ object Rethrows extends Rethrows
 class Rethrows extends UnitTransformerBase {
   
   def transform(cu: CompilationUnit): CompilationUnit = {
-    cu.accept(this, new Context()).asInstanceOf[CompilationUnit] 
+    cu.accept(this, cu).asInstanceOf[CompilationUnit] 
   }  
     
-  override def visit(n: TryStmt, arg: Context) = {
+  override def visit(n: TryStmt, arg: CompilationUnit): Node = {
     if (n.getFinallyBlock == null && !isEmpty(n.getCatchs) && n.getCatchs.filter(isPrinted).isEmpty) {
-      n.getTryBlock()
+      super.visit(n.getTryBlock, arg)
     } else {
       super.visit(n, arg)
     }
   }
   
-  private def isPrinted(c: CatchClause): Boolean = {
+  private def isPrinted(c: Catch): Boolean = {
     val block = c.getCatchBlock()
     block.size > 1 || (block.size == 1 && !block(0).isInstanceOf[ThrowStmt])
   }

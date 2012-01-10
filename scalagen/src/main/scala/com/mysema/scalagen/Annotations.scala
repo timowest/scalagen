@@ -20,6 +20,7 @@ import japa.parser.ast.expr._
 import japa.parser.ast.visitor._
 import japa.parser.ast.`type`.ClassOrInterfaceType
 import java.util.ArrayList
+import japa.parser.ast.visitor.ModifierVisitorAdapter
 import UnitTransformer._
 
 
@@ -34,10 +35,10 @@ class Annotations extends UnitTransformerBase {
   private val staticAnnotationType = new ClassOrInterfaceType("StaticAnnotation")
   
   def transform(cu: CompilationUnit): CompilationUnit = {
-    cu.accept(this, new Context()).asInstanceOf[CompilationUnit] 
+    cu.accept(this, cu).asInstanceOf[CompilationUnit] 
   }  
     
-  override def visit(n: AnnotationDeclaration, arg: Context) = {
+  override def visit(n: AnnotationDeclaration, arg: CompilationUnit) = {
     val clazz = new ClassOrInterface()
     clazz.setName(n.getName)    
     clazz.setExtends(staticAnnotationType.asList)

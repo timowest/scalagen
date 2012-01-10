@@ -29,14 +29,17 @@ object ControlStatements extends ControlStatements
 class ControlStatements extends UnitTransformerBase {
   
   def transform(cu: CompilationUnit): CompilationUnit = {
-    cu.accept(this, new Context()).asInstanceOf[CompilationUnit] 
+    cu.accept(this, cu).asInstanceOf[CompilationUnit] 
   }  
-    
-  override def visit(n: ForStmt, arg: Context) = {
+  
+  // TODO : convert to use pattern matching
+        
+  override def visit(nn: ForStmt, arg: CompilationUnit): Node = {
     // transform
     //   for (int i = 0; i < x; i++) block 
     // into
     //   for (i <- 0 until x) block
+    val n = super.visit(nn, arg).asInstanceOf[ForStmt]
     if (n.getInit != null && n.getInit.size == 1 && n.getInit.get(0).isInstanceOf[VariableDeclaration]
      && n.getCompare.isInstanceOf[Binary] 
      && n.getCompare.asInstanceOf[Binary].getOperator.toString == "less"
@@ -53,11 +56,12 @@ class ControlStatements extends UnitTransformerBase {
     }    
   }
   
-  override def visit(n: IfStmt, arg: Context): Node = {
+  override def visit(nn: IfStmt, arg: CompilationUnit): Node = {
     // transform
     //   if (contition) target = x else target = y
     // into
     //   target = if (condition) e else y    
+    val n = super.visit(nn, arg).asInstanceOf[IfStmt]
     if (n.getElseStmt != null) {
       val thenStmt = extractStmt(n.getThenStmt)
       val elseStmt = extractStmt(n.getElseStmt)
@@ -74,8 +78,9 @@ class ControlStatements extends UnitTransformerBase {
     super.visit(n, arg)    
   }
   
-  override def visit(n: SwitchEntryStmt, arg: Context) = {    
+  override def visit(nn: SwitchEntryStmt, arg: CompilationUnit) = {    
     // remove break
+    val n = super.visit(nn, arg).asInstanceOf[SwitchEntryStmt]
     val size = if (n.getStmts == null) 0 else n.getStmts.size
     if (size > 1 && n.getStmts.get(size-1).isInstanceOf[BreakStmt]) {
       n.getStmts.remove(size-1)

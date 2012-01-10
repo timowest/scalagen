@@ -36,10 +36,10 @@ class Enums extends UnitTransformerBase {
   private val valueType = new ClassOrInterfaceType("Value")
   
   def transform(cu: CompilationUnit): CompilationUnit = {
-    cu.accept(this, new Context()).asInstanceOf[CompilationUnit] 
-  }  
+    cu.accept(this, cu).asInstanceOf[CompilationUnit] 
+  }   
     
-  override def visit(n: EnumDeclaration, arg: Context) = {
+  override def visit(n: EnumDeclaration, arg: CompilationUnit) = {
     val clazz = new ClassOrInterface()
     clazz.setExtends(enumerationType.asList)
     clazz.setName(n.getName)

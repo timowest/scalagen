@@ -42,27 +42,28 @@ object ScalaDumpVisitor {
   private val RESERVED = Set("def","match","object","type","val","var")
   
   private val JAVA_TYPES = Set("Iterable")
+
+  class Context {  
+    var arrayAccess = false
+    var classOf = false
+    var label: String = _   
+    var skip = false
+    var assignType: Type = _
+    var inObjectEquals = false
+    var returnOn = false
+    var typeArg = false
+    var imports = Map[String,String]()
+    //var split = false
+  }
   
 }
 
-class Context {  
-  var arrayAccess = false
-  var classOf = false
-  var label: String = _   
-  var skip = false
-  var assignType: Type = _
-  var inObjectEquals = false
-  var returnOn = false
-  var typeArg = false
-  var imports = Map[String,String]()
-  //var split = false
-}
 
 /**
  * ScalaDumpVisitor is a serializing visitor for CompilationUnit instances
  *
  */
-class ScalaDumpVisitor extends VoidVisitor[Context] with Helpers {
+class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helpers {
   import ScalaDumpVisitor._
     
   private val printer = new SourcePrinter()

@@ -25,29 +25,20 @@ object Constructors extends Constructors
 /**
  * Constructors reorders and normalizes constructors
  */
-class Constructors extends UnitTransformer {
+class Constructors extends UnitTransformerBase {
    
   def transform(cu: CompilationUnit): CompilationUnit = {
-    for (t <- cu.getTypes if t.getMembers != null) {
-      transform(cu, t)
-    }
-    cu
-  }
-
-  private def isThisConstructor(s: Statement): Boolean = {
-    s.isInstanceOf[ConstructorInvocation] && 
-    s.asInstanceOf[ConstructorInvocation].isThis
-  }
+    cu.accept(this, cu).asInstanceOf[CompilationUnit] 
+  }  
   
-  private def transform(cu: CompilationUnit, t: Type) {
-    // transform sub types
-    t.getMembers.collect { case t: Type => t}.foreach(t => transform(cu, t))    
+  override def visit(n: ClassOrInterface, cu: CompilationUnit):  ClassOrInterface = {  
+    val t = super.visit(n, cu).asInstanceOf[ClassOrInterface]
     
     // get all constructors
     val constr = t.getMembers.collect { case c: Constructor => c }
       
     if (constr.isEmpty) {
-      return
+      return t
     }
     
     // get first without delegating
@@ -83,7 +74,7 @@ class Constructors extends UnitTransformer {
           c.getBlock.getStmts.add(0, new ConstructorInvocation(true, null, null))
         }
       }
-    
+    t
   }
   
   private def processStatements(cu: CompilationUnit, t: Type, c: Constructor) {

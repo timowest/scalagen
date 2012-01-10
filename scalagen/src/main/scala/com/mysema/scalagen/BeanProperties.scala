@@ -16,6 +16,7 @@ package com.mysema.scalagen
 import japa.parser.ast.CompilationUnit
 import japa.parser.ast.body.ModifierSet
 import japa.parser.ast.body.VariableDeclarator
+import japa.parser.ast.body.ClassOrInterfaceDeclaration
 import japa.parser.ast.`type`.PrimitiveType
 import japa.parser.ast.`type`.PrimitiveType.Primitive
 import japa.parser.ast.`type`.VoidType
@@ -30,54 +31,20 @@ object BeanProperties extends BeanProperties
  * BeanProperties turns field + accessor combinations into @BeanPropert annotated 
  * Scala properties
  */
-class BeanProperties extends UnitTransformer {
+class BeanProperties extends UnitTransformerBase {
     
+  private val getter = "get\\w+".r
+  
+  private val setter = "set\\w+".r
+  
+  private val booleanGetter = "is\\w+".r
+  
   def transform(cu: CompilationUnit): CompilationUnit = {
-    for (t <- cu.getTypes if t.getMembers != null) {
-      transform(cu, t)
-    }
-    cu
-  }
+    cu.accept(this, cu).asInstanceOf[CompilationUnit] 
+  }  
   
-  private def isGetter(method: Method): Boolean = { 
-    method.getName.startsWith("get") && !method.getModifiers.isPrivate && 
-    isEmpty(method.getParameters) && 
-    !(method.getType.isInstanceOf[VoidType]) &&
-    method.getBody != null && method.getBody.size == 1 &&
-    isReturnFieldStmt(method.getBody()(0))
-  }
-  
-  private def isBooleanGetter(method: Method): Boolean = {
-    method.getName.startsWith("is") && !method.getModifiers.isPrivate && 
-    isEmpty(method.getParameters) && 
-    method.getType.isInstanceOf[PrimitiveType] && 
-    (method.getType.asInstanceOf[PrimitiveType]).getType == Primitive.Boolean &&
-    method.getBody != null && method.getBody.size == 1 && 
-    isReturnFieldStmt(method.getBody()(0))
-  }
-    
-  private def isSetter(method: Method): Boolean = {
-    method.getName.startsWith("set") && 
-    (method.getParameters != null && method.getParameters.size == 1) && 
-    method.getType.isInstanceOf[VoidType] &&
-    method.getBody != null && method.getBody.size == 1 && 
-    isSetFieldStmt(method.getBody()(0))
-  }
-    
-  private def isReturnFieldStmt(stmt: Statement): Boolean = stmt match {
-    case r: Return => r.getExpr.isInstanceOf[Name] || r.getExpr.isInstanceOf[FieldAccess]
-    case _ => false
-  }
-  
-  private def isSetFieldStmt(stmt: Statement): Boolean = stmt match {
-    case e: ExpressionStmt => e.getExpression.isInstanceOf[Assign] && 
-      e.getExpression.asInstanceOf[Assign].getOperator.toString == "assign"
-    case _ => false
-  }
-  
-  private def transform(cu: CompilationUnit, t: Type) {
-    // transform sub types
-    t.getMembers.collect { case t: Type => t}.foreach(t => transform(cu, t))
+  override def visit(n: ClassOrInterface, cu: CompilationUnit): ClassOrInterface = {      
+    val t = super.visit(n, cu).asInstanceOf[ClassOrInterface]
     
     // accessors
     val methods = t.getMembers.collect { case m: Method => m }
@@ -100,7 +67,9 @@ class BeanProperties extends UnitTransformer {
       setters.get(name).foreach { t.getMembers.remove(_) }
 
       // make field public
-      field.setModifiers(field.getModifiers.removeModifier(ModifierSet.PRIVATE))
+      val isFinal = field.getModifiers.isFinal
+      field.setModifiers(getter.getModifiers
+          .addModifier(if (isFinal) ModifierSet.FINAL else 0));
       if (field.getAnnotations == null) {
         field.setAnnotations(new ArrayList[Annotation]())
       }
@@ -113,5 +82,47 @@ class BeanProperties extends UnitTransformer {
     if (!fields.isEmpty && !cu.getImports.contains(BEAN_PROPERTY_IMPORT)) {
       cu.getImports.add(BEAN_PROPERTY_IMPORT)
     }
+    t
   }
+  
+  private def isGetter(method: Method): Boolean = method match {
+    case Method(getter, t, Nil, Block(stmt :: Nil)) if isReturnFieldStmt(stmt)  => true
+    case _ => false
+  }
+  
+  private def isBooleanGetter(method: Method): Boolean = method match {
+    case Method(booleanGetter, Type.Boolean, Nil, Block(stmt :: Nil)) if isReturnFieldStmt(stmt) => true
+    case _ => false
+  }
+  
+  private def isSetter(method: Method): Boolean = method match {
+    case Method(setter, Type.Void, _ :: Nil, Block(stmt :: Nil)) if isSetFieldStmt(stmt) => true
+    case _ => false
+  }
+  
+//  private def isGetter(method: Method): Boolean = { 
+//    method.getName.startsWith("get") && !method.getModifiers.isPrivate && 
+//    isEmpty(method.getParameters) && 
+//    !(method.getType.isInstanceOf[VoidType]) &&
+//    method.getBody != null && method.getBody.size == 1 &&
+//    isReturnFieldStmt(method.getBody()(0))
+//  }
+    
+//  private def isBooleanGetter(method: Method): Boolean = {
+//    method.getName.startsWith("is") && !method.getModifiers.isPrivate && 
+//    isEmpty(method.getParameters) && 
+//    method.getType.isInstanceOf[PrimitiveType] && 
+//    (method.getType.asInstanceOf[PrimitiveType]).getType == Primitive.Boolean &&
+//    method.getBody != null && method.getBody.size == 1 && 
+//    isReturnFieldStmt(method.getBody()(0))
+//  }
+    
+//  private def isSetter(method: Method): Boolean = {
+//    method.getName.startsWith("set") && 
+//    (method.getParameters != null && method.getParameters.size == 1) && 
+//    method.getType.isInstanceOf[VoidType] &&
+//    method.getBody != null && method.getBody.size == 1 && 
+//    isSetFieldStmt(method.getBody()(0))
+//  }
+    
 }

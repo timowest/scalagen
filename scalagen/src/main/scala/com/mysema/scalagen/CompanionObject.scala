@@ -23,6 +23,7 @@ object CompanionObject extends CompanionObject
 /**
  * CompanionObject moves static members into companion objects
  */
+// TODO : use ModifierVisitorAdapter
 class CompanionObject extends UnitTransformer {
 
   def transform(cu: CompilationUnit): CompilationUnit = {
