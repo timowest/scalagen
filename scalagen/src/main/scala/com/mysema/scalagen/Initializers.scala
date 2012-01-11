@@ -43,6 +43,8 @@ class Initializers extends UnitTransformer {
       val fields = t.getMembers.collect { case f: Field => f }
       val variables = fields.flatMap(_.getVariables).map(v => (v.getId.getName, v)).toMap
       
+      // TODO : use pattern matching
+      
       for (i <- initializers) {
         val stmts = new java.util.HashSet[Statement]()
         for (stmt <- i.getBlock.getStmts if isAssignment(stmt)) {

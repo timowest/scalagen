@@ -77,14 +77,13 @@ class Properties extends UnitTransformerBase {
   // if (uncreated) { create } return
   private def isLazyCreation(block: Block, f: String): Boolean = block match {
     case Block(
-        If(isnull(field(f1)), Block(Stmt(field(f2) assign init) :: Nil), null) :: 
-        Return(field(f3)) :: Nil) 
-        if f1 == f && f2 == f && f3 == f => true
+        If(isnull(field(`f`)), Stmt(field(`f`) assign init), null) :: 
+        Return(field(`f`)) :: Nil) => true
     case _ => false   
   }
   
   private def isGetter(method: Method): Boolean = method match {
-    case Method(n, t, Nil, Block(_ :: _)) if !t.isInstanceOf[VoidType] => true
+    case Method(n, t, Nil, Block(_ :: rest)) if !t.isInstanceOf[VoidType] => true
     case _ => false
   }    
     

@@ -51,6 +51,14 @@ object UnitTransformer extends Helpers {
   object equals {
     def unapply(b: Binary) = if (b.getOperator == Binary.equals) Some(b.getLeft, b.getRight) else None 
   }
+  
+  object increment {
+    def unapply(u: Unary) = if (u.getOperator.toString.endsWith("Increment")) Some(u.getExpr) else None
+  }
+  
+  object less {
+    def unapply(b: Binary) = if (b.getOperator == Binary.less) Some(b.getLeft, b.getRight) else None
+  }
     
   object field {
     def unapply(f: Expression) = f match {
@@ -91,7 +99,11 @@ object UnitTransformer extends Helpers {
   type Binary = BinaryExpr
   
   object Block {
-    def unapply(b: Block) = Some(if (b != null) toScalaList(b.getStmts) else Nil)
+    //def unapply(b: Block) = Some(if (b != null) toScalaList(b.getStmts) else Nil)
+    def unapply(s: Statement) = s match {
+      case b: Block => Some(if (b != null) toScalaList(b.getStmts) else Nil)
+      case _ => Some(List(s))
+    } 
   }
   
   type Block = BlockStmt
@@ -105,7 +117,7 @@ object UnitTransformer extends Helpers {
   type BooleanLiteral = BooleanLiteralExpr
   
   object Catch {
-    def unapply(c: Catch) = Some(c.getExcept, c.getCatchBlock)
+    def unapply(c: Catch) = Some(c.getExcept, extract(c.getCatchBlock))
   }
   
   type Catch = CatchClause
@@ -123,7 +135,7 @@ object UnitTransformer extends Helpers {
   type Conditional = ConditionalExpr
   
   object Constructor {
-    def unapply(c: Constructor) = Some(toScalaList(c.getParameters), c.getBlock)
+    def unapply(c: Constructor) = Some(toScalaList(c.getParameters), extract(c.getBlock))
     def unapply(c: ConstructorInvocation) = Some(c.isThis, toScalaList(c.getArgs))
   }
   
@@ -139,8 +151,14 @@ object UnitTransformer extends Helpers {
     
   type FieldAccess = FieldAccessExpr
   
+  object For {
+    def unapply(f: For) = Some(toScalaList(f.getInit), f.getCompare, toScalaList(f.getUpdate), extract(f.getBody))
+  }
+  
+  type For = ForStmt
+  
   object If {
-    def unapply(i: If) = Some(i.getCondition, i.getThenStmt, i.getElseStmt)
+    def unapply(i: If) = Some(i.getCondition, extract(i.getThenStmt), extract(i.getElseStmt))
   }
   
   type If = IfStmt
@@ -156,7 +174,7 @@ object UnitTransformer extends Helpers {
   type MarkerAnnotation = MarkerAnnotationExpr
   
   object Method {
-    def unapply(m: Method) = Some(m.getName, m.getType, toScalaList(m.getParameters), m.getBody)
+    def unapply(m: Method) = Some(m.getName, m.getType, toScalaList(m.getParameters), extract(m.getBody))
     def unapply(m: MethodCall) = Some(safeToString(m.getScope), m.getName, toScalaList(m.getArgs))
   }
   
@@ -203,10 +221,14 @@ object UnitTransformer extends Helpers {
   type Unary = UnaryExpr
   
   object Variable {
-    def unapply(v: VariableDeclarator) = Some(v.getId.getName, v.getInit)
+    def unapply(v: VariableDeclarator) = Some(v.getId.getName, v.getInit)    
   }
   
   type Variable = VariableDeclarator
+  
+  object VariableDeclaration {
+    def unapply(v: VariableDeclaration) = Some(v.getType, toScalaList(v.getVars))
+  }
   
   type VariableDeclaration = VariableDeclarationExpr
 

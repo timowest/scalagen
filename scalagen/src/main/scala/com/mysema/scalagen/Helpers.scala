@@ -79,7 +79,7 @@ trait Helpers {
   @inline
   def isEmpty(col: JavaCollection[_]): Boolean = col == null || col.isEmpty
     
-  def extractStmt(stmt: Statement): Statement = stmt match {
+  def extract(stmt: Statement): Statement = stmt match {
     case b: BlockStmt => if (b.size == 1) b(0) else b
     case _ => stmt
   } 

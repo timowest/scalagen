@@ -31,51 +31,35 @@ class ControlStatements extends UnitTransformerBase {
   def transform(cu: CompilationUnit): CompilationUnit = {
     cu.accept(this, cu).asInstanceOf[CompilationUnit] 
   }  
-  
-  // TODO : convert to use pattern matching
         
   override def visit(nn: ForStmt, arg: CompilationUnit): Node = {
     // transform
     //   for (int i = 0; i < x; i++) block 
     // into
     //   for (i <- 0 until x) block
-    val n = super.visit(nn, arg).asInstanceOf[ForStmt]
-    if (n.getInit != null && n.getInit.size == 1 && n.getInit.get(0).isInstanceOf[VariableDeclaration]
-     && n.getCompare.isInstanceOf[Binary] 
-     && n.getCompare.asInstanceOf[Binary].getOperator.toString == "less"
-     && n.getUpdate != null && n.getUpdate.size == 1 
-     && n.getUpdate.get(0).isInstanceOf[Unary]
-     && n.getUpdate.get(0).asInstanceOf[Unary].getOperator.toString.endsWith("Increment")) {
-      val init = n.getInit.get(0).asInstanceOf[VariableDeclaration]
-      val cmp = n.getCompare.asInstanceOf[Binary]
-      var until = new MethodCall(init.getVars.get(0).getInit, "until", cmp.getRight.asList)
-      init.getVars.get(0).setInit(null)
-      new ForeachStmt(init, until, n.getBody())
-    } else {
-      n  
-    }    
+    val n = super.visit(nn, arg).asInstanceOf[ForStmt]    
+    n match {
+      case For((init: VariableDeclaration) :: Nil, l less r, increment(_) :: Nil, _) => {
+        val until = new MethodCall(init.getVars.get(0).getInit, "until", r.asList)
+        init.getVars.get(0).setInit(null)
+        new ForeachStmt(init, until, n.getBody)
+      }
+      case _ => n
+    }
   }
   
   override def visit(nn: IfStmt, arg: CompilationUnit): Node = {
     // transform
-    //   if (contition) target = x else target = y
+    //   if (condition) target = x else target = y
     // into
     //   target = if (condition) e else y    
-    val n = super.visit(nn, arg).asInstanceOf[IfStmt]
-    if (n.getElseStmt != null) {
-      val thenStmt = extractStmt(n.getThenStmt)
-      val elseStmt = extractStmt(n.getElseStmt)
-      if (isAssignment(thenStmt) && isAssignment(elseStmt)) {
-        val thenAssign = getAssignment(thenStmt)
-        val elseAssign = getAssignment(elseStmt)
-        if (thenAssign.getTarget == elseAssign.getTarget) {
-          return new ExpressionStmt(new Assign(thenAssign.getTarget, 
-              new Conditional(n.getCondition, thenAssign.getValue, elseAssign.getValue),
-              AssignExpr.Operator.assign))
-        }
+    val n = super.visit(nn, arg).asInstanceOf[IfStmt]    
+    n match {
+      case If(cond, Stmt(t1 assign v1), Stmt(t2 assign v2)) if t1 == t2 => {
+        new ExpressionStmt(new Assign(t1, new Conditional(n.getCondition, v1, v2), Assign.assign))  
       }
-    } 
-    super.visit(n, arg)    
+      case _ => n
+    }    
   }
   
   override def visit(nn: SwitchEntryStmt, arg: CompilationUnit) = {    

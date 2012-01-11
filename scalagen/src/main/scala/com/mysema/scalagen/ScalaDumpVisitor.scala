@@ -1189,7 +1189,7 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
     
     var body = n.getBody
     while (isUnwrapped(body)) {
-      extractStmt(body) match {
+      extract(body) match {
         case fe: ForeachStmt => {
           printer.print("; ")
           fe.getVariable.getVars.get(0).accept(this, arg)
@@ -1210,7 +1210,7 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
     
   }
   
-  private def isUnwrapped(stmt: Statement): Boolean = extractStmt(stmt) match {
+  private def isUnwrapped(stmt: Statement): Boolean = extract(stmt) match {
     case foreach: ForeachStmt => true
     case ifStmt: IfStmt => ifStmt.getElseStmt() == null
     case _ => false
