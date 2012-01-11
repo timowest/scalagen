@@ -43,23 +43,17 @@ class Initializers extends UnitTransformer {
       val fields = t.getMembers.collect { case f: Field => f }
       val variables = fields.flatMap(_.getVariables).map(v => (v.getId.getName, v)).toMap
       
-      // TODO : use pattern matching
-      
       for (i <- initializers) {
         val stmts = new java.util.HashSet[Statement]()
-        for (stmt <- i.getBlock.getStmts if isAssignment(stmt)) {
-          val assign = getAssignment(stmt)
-          if (assign.getTarget.isInstanceOf[Name]) {
-            val namedTarget = assign.getTarget.asInstanceOf[Name]
-            if (variables.contains(namedTarget.getName)) {
-              variables(namedTarget.getName).setInit(assign.getValue)
-              stmts.add(stmt)
-            }
+        for (stmt <- i.getBlock.getStmts) stmt match {
+          case Stmt((t: Name) assign v) if variables.contains(t.getName) => {
+            variables(t.getName).setInit(v)
+            stmts.add(stmt)
           }
+          case _ => 
         }
-        
-        i.getBlock.removeAll(stmts)      
-      }      
+        i.getBlock.removeAll(stmts)
+      }
       
       // remove empty initializers
       for (i <- initializers if i.getBlock.isEmpty) {
@@ -68,5 +62,17 @@ class Initializers extends UnitTransformer {
     }
   }
 
+//      for (i <- initializers) {
+//        val stmts = new java.util.HashSet[Statement]()
+//        for (stmt <- i.getBlock.getStmts if isAssignment(stmt)) {
+//          val assign = getAssignment(stmt)
+//          if (assign.getTarget.isInstanceOf[Name]) {
+//            val namedTarget = assign.getTarget.asInstanceOf[Name]
+//            if (variables.contains(namedTarget.getName)) {
+//              variables(namedTarget.getName).setInit(assign.getValue)
+//              stmts.add(stmt)
+//            }
+//          }
+//        }  
   
 }
