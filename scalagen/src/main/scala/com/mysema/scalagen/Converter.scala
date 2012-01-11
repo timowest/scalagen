@@ -34,6 +34,7 @@ object Converter {
     ControlStatements, 
     CompanionObject,
     BeanProperties, 
+    Properties,
     Constructors, 
     Initializers))  
   

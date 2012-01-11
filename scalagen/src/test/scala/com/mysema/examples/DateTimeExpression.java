@@ -40,8 +40,7 @@ import com.mysema.query.types.expr.TemporalExpression;
  * @author tiwe
  * @see <a href="http://en.wikipedia.org/wiki/Gregorian_calendar">Gregorian calendar</a>
  */
-@SuppressWarnings({"unchecked"})
-public abstract class DateTimeExpression<T extends Comparable> extends TemporalExpression<T> {
+public abstract class DateTimeExpression<T extends Comparable<T>> extends TemporalExpression<T> {
 
     private static final DateTimeExpression<Date> CURRENT_DATE = currentDate(Date.class);
 
@@ -63,7 +62,7 @@ public abstract class DateTimeExpression<T extends Comparable> extends TemporalE
      *
      * @return
      */
-    public static <T extends Comparable> DateTimeExpression<T> currentDate(Class<T> cl) {
+    public static <T extends Comparable<T>> DateTimeExpression<T> currentDate(Class<T> cl) {
         return DateTimeOperation.<T>create(cl, Ops.DateTimeOps.CURRENT_DATE);
     }
 
@@ -81,8 +80,8 @@ public abstract class DateTimeExpression<T extends Comparable> extends TemporalE
      *
      * @return
      */
-    public static <T extends Comparable> DateTimeExpression<T> currentTimestamp(Class<T> cl) {
-        return DateTimeOperation.create(cl, Ops.DateTimeOps.CURRENT_TIMESTAMP);
+    public static <T extends Comparable<T>> DateTimeExpression<T> currentTimestamp(Class<T> cl) {
+        return DateTimeOperation.<T>create(cl, Ops.DateTimeOps.CURRENT_TIMESTAMP);
     }
 
 
@@ -90,7 +89,7 @@ public abstract class DateTimeExpression<T extends Comparable> extends TemporalE
     private volatile NumberExpression<Integer> dayOfMonth, dayOfWeek, dayOfYear;
 
     @Nullable
-    private volatile NumberExpression<Integer> hours, minutes, seconds, milliseconds;
+    private volatile NumberExpression<Integer> hour, minute, second, milliSecond;
 
 
     @Nullable
@@ -99,13 +98,13 @@ public abstract class DateTimeExpression<T extends Comparable> extends TemporalE
     @Nullable
     private volatile NumberExpression<Integer> week, month, year, yearMonth;
 
-    public DateTimeExpression(Class<? extends T> type) {
+    public DateTimeExpression(Class<T> type) {
         super(type);
     }
 
     @Override
     public DateTimeExpression<T> as(Path<T> alias) {
-        return DateTimeOperation.create((Class<T>)getType(), Ops.ALIAS, this, alias);
+        return DateTimeOperation.<T>create((Class<T>)getType(), Ops.ALIAS, this, alias);
     }
 
     @Override
@@ -157,10 +156,10 @@ public abstract class DateTimeExpression<T extends Comparable> extends TemporalE
      * @return
      */
     public NumberExpression<Integer> hour(){
-        if (hours == null) {
-            hours = NumberOperation.create(Integer.class, Ops.DateTimeOps.HOUR, this);
+        if (hour == null) {
+            hour = NumberOperation.create(Integer.class, Ops.DateTimeOps.HOUR, this);
         }
-        return hours;
+        return hour;
     }
 
     /**
@@ -170,7 +169,7 @@ public abstract class DateTimeExpression<T extends Comparable> extends TemporalE
      */
     public DateTimeExpression<T> max(){
         if (max == null) {
-            max = DateTimeOperation.create((Class<T>)getType(), Ops.AggOps.MAX_AGG, this);
+            max = DateTimeOperation.<T>create((Class<T>)getType(), Ops.AggOps.MAX_AGG, this);
         }
         return max;
     }
@@ -182,10 +181,10 @@ public abstract class DateTimeExpression<T extends Comparable> extends TemporalE
      * @return
      */
     public NumberExpression<Integer> milliSecond(){
-        if (milliseconds == null) {
-            milliseconds = NumberOperation.create(Integer.class, Ops.DateTimeOps.MILLISECOND, this);
+        if (milliSecond == null) {
+            milliSecond = NumberOperation.create(Integer.class, Ops.DateTimeOps.MILLISECOND, this);
         }
-        return milliseconds;
+        return milliSecond;
     }
 
     /**
@@ -195,7 +194,7 @@ public abstract class DateTimeExpression<T extends Comparable> extends TemporalE
      */
     public DateTimeExpression<T> min(){
         if (min == null) {
-            min = DateTimeOperation.create((Class<T>)getType(), Ops.AggOps.MIN_AGG, this);
+            min = DateTimeOperation.<T>create((Class<T>)getType(), Ops.AggOps.MIN_AGG, this);
         }
         return min;
     }
@@ -206,10 +205,10 @@ public abstract class DateTimeExpression<T extends Comparable> extends TemporalE
      * @return
      */
     public NumberExpression<Integer> minute(){
-        if (minutes == null) {
-            minutes = NumberOperation.create(Integer.class, Ops.DateTimeOps.MINUTE, this);
+        if (minute == null) {
+            minute = NumberOperation.create(Integer.class, Ops.DateTimeOps.MINUTE, this);
         }
-        return minutes;
+        return minute;
     }
 
     /**
@@ -230,10 +229,10 @@ public abstract class DateTimeExpression<T extends Comparable> extends TemporalE
      * @return
      */
     public NumberExpression<Integer> second(){
-        if (seconds == null) {
-            seconds = NumberOperation.create(Integer.class, Ops.DateTimeOps.SECOND, this);
+        if (second == null) {
+            second = NumberOperation.create(Integer.class, Ops.DateTimeOps.SECOND, this);
         }
-        return seconds;
+        return second;
     }
 
     /**
@@ -274,7 +273,7 @@ public abstract class DateTimeExpression<T extends Comparable> extends TemporalE
 
 }
 
-class DateTimeOperation<T extends Comparable<?>> extends DateTimeExpression<T> implements Operation<T> {
+class DateTimeOperation<T extends Comparable<T>> extends DateTimeExpression<T> implements Operation<T> {
 
     private static final long serialVersionUID = 6523293814317168556L;
 
@@ -287,15 +286,15 @@ class DateTimeOperation<T extends Comparable<?>> extends DateTimeExpression<T> i
      * @param args
      * @return
      */
-    public static <D extends Comparable<?>> DateTimeExpression<D> create(Class<D> type, Operator<? super D> op, Expression<?>... args) {
-        return new DateTimeOperation<D>(type, op, args);
+    public static <D extends Comparable<D>> DateTimeExpression<D> create(Class<D> type, Operator<? super D> op, Expression<?>... args) {
+        return new DateTimeOperation<D>(type, op, Arrays.asList(args));
     }
 
     private final Operation<T> opMixin;
 
-    protected DateTimeOperation(Class<T> type, Operator<? super T> op, Expression<?>... args) {
-        this(type, op, Arrays.asList(args));
-    }
+//    protected DateTimeOperation(Class<T> type, Operator<? super T> op, Expression<?>... args) {
+//        this(type, op, Arrays.asList(args));
+//    }
 
     protected DateTimeOperation(Class<T> type, Operator<? super T> op, List<Expression<?>> args) {
         super(type);

@@ -109,6 +109,19 @@ class SerializationTest extends AbstractParserTest {
   }
   
   @Test
+  def DateTimeExpression {
+    val sources = toScala[DateTimeExpression[_]]
+    assertContains(sources, 
+        "lazy val dayOfMonth = NumberOperation.create(classOf[Integer], Ops.DateTimeOps.DAY_OF_MONTH, this)",
+        "lazy val dayOfWeek = NumberOperation.create(classOf[Integer], Ops.DateTimeOps.DAY_OF_WEEK, this)",
+        "lazy val dayOfYear = NumberOperation.create(classOf[Integer], Ops.DateTimeOps.DAY_OF_YEAR, this)",
+        "lazy val hour = NumberOperation.create(classOf[Integer], Ops.DateTimeOps.HOUR, this)",
+        "lazy val minute = NumberOperation.create(classOf[Integer], Ops.DateTimeOps.MINUTE, this)",
+        "lazy val second = NumberOperation.create(classOf[Integer], Ops.DateTimeOps.SECOND, this)",
+        "lazy val milliSecond = NumberOperation.create(classOf[Integer], Ops.DateTimeOps.MILLISECOND, this)")
+  }
+  
+  @Test
   def FileSystemRegistry {
     val sources = toScala[FileSystemRegistry]
     assertContains(sources, "class FileSystemRegistry private () {")  

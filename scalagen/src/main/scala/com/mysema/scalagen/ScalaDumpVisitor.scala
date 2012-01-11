@@ -96,6 +96,10 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
     } else if (modifiers.isPublic) {
     }
     
+    if (modifiers.isLazy) {
+      printer.print("lazy ")
+    }
+    
     if (modifiers.isImplicit) {
       printer.print("implicit ")
     }

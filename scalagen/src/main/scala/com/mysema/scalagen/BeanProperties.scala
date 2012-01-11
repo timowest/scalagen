@@ -86,43 +86,18 @@ class BeanProperties extends UnitTransformerBase {
   }
   
   private def isGetter(method: Method): Boolean = method match {
-    case Method(getter, t, Nil, Block(stmt :: Nil)) if isReturnFieldStmt(stmt)  => true
+    case Method(getter, t, Nil, Block(Return(field(_)) :: Nil)) => true
     case _ => false
   }
   
   private def isBooleanGetter(method: Method): Boolean = method match {
-    case Method(booleanGetter, Type.Boolean, Nil, Block(stmt :: Nil)) if isReturnFieldStmt(stmt) => true
+    case Method(booleanGetter, Type.Boolean, Nil, Block(Return(field(_)) :: Nil)) => true
     case _ => false
   }
   
   private def isSetter(method: Method): Boolean = method match {
-    case Method(setter, Type.Void, _ :: Nil, Block(stmt :: Nil)) if isSetFieldStmt(stmt) => true
+    case Method(setter, Type.Void, _ :: Nil, Block(Stmt(_ assign _) :: Nil)) => true
     case _ => false
   }
   
-//  private def isGetter(method: Method): Boolean = { 
-//    method.getName.startsWith("get") && !method.getModifiers.isPrivate && 
-//    isEmpty(method.getParameters) && 
-//    !(method.getType.isInstanceOf[VoidType]) &&
-//    method.getBody != null && method.getBody.size == 1 &&
-//    isReturnFieldStmt(method.getBody()(0))
-//  }
-    
-//  private def isBooleanGetter(method: Method): Boolean = {
-//    method.getName.startsWith("is") && !method.getModifiers.isPrivate && 
-//    isEmpty(method.getParameters) && 
-//    method.getType.isInstanceOf[PrimitiveType] && 
-//    (method.getType.asInstanceOf[PrimitiveType]).getType == Primitive.Boolean &&
-//    method.getBody != null && method.getBody.size == 1 && 
-//    isReturnFieldStmt(method.getBody()(0))
-//  }
-    
-//  private def isSetter(method: Method): Boolean = {
-//    method.getName.startsWith("set") && 
-//    (method.getParameters != null && method.getParameters.size == 1) && 
-//    method.getType.isInstanceOf[VoidType] &&
-//    method.getBody != null && method.getBody.size == 1 && 
-//    isSetFieldStmt(method.getBody()(0))
-//  }
-    
 }

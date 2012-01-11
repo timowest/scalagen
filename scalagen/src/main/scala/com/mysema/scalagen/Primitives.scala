@@ -43,26 +43,10 @@ class Primitives  extends UnitTransformerBase {
     case Field("Boolean", "FALSE") => FALSE
     case _ => super.visit(n, arg)
   }
-  
-//  override def visit(n: FieldAccess, arg: CompilationUnit): Node = {
-//    if (n.getScope.toString == "Boolean") {
-//      if (n.getField == "TRUE") return TRUE
-//      else if (n.getField == "FALSE") return FALSE
-//    }
-//    n
-//  }
-  
+    
   override def visit(n: MethodCall, arg: CompilationUnit): Node = n match {
     case Method(scope, "valueOf", a :: Nil) if primitives.contains(scope) => a.accept(this, arg)
     case _ => super.visit(n, arg)
   }
   
-//  override def visit(n: MethodCall, arg: CompilationUnit): Node = {
-//    if (n.getName == "valueOf" && n.getArgs.size == 1 
-//      && n.getScope != null && primitives.contains(n.getScope.toString)) {
-//      n.getArgs.get(0)
-//    } else {
-//      n
-//    }
-//  }
 }  

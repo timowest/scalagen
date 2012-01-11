@@ -58,10 +58,12 @@ class Properties extends UnitTransformerBase {
       if (isReturnFieldStmt(body(0))) {
         t.getMembers.remove(getter)
         field.setModifiers(getter.getModifiers)
-      } else if (isLazyCreation(body)) {
+      } else if (isLazyCreation(body,name)) {
         t.getMembers.remove(getter)
+        // TODO : extract via match
         val init = body(0).asInstanceOf[IfStmt]
-          .getThenStmt.asInstanceOf[ExpressionStmt]
+          .getThenStmt.asInstanceOf[Block]
+          .getStmts().get(0).asInstanceOf[ExpressionStmt]
           .getExpression.asInstanceOf[Assign]
           .getValue        
         variable.setInit(init)
@@ -72,22 +74,25 @@ class Properties extends UnitTransformerBase {
     t
   }
   
-  private def isLazyCreation(block: Block): Boolean = {
-    // if (uncreated) { create } return
-    // if (uncreated) { create; return } else { return }
-    // if (uncreated) { return create } else { return }
-    block.size == 2 &&
-    (block(0) match {
-      case ifStmt: IfStmt => false // TODO
-      case _ => false
-    }) && isReturnFieldStmt(block(1))
+  // if (uncreated) { create } return
+  private def isLazyCreation(block: Block, f: String): Boolean = block match {
+    case Block(
+        If(isnull(field(f1)), Block(Stmt(field(f2) assign init) :: Nil), null) :: 
+        Return(field(f3)) :: Nil) 
+        if f1 == f && f2 == f && f3 == f => true
+    case _ => false   
   }
   
-  private def isGetter(method: Method): Boolean = { 
-    isEmpty(method.getParameters) && 
-    !method.getType.isInstanceOf[VoidType] &&
-    !method.getBody.isEmpty
+  private def isGetter(method: Method): Boolean = method match {
+    case Method(n, t, Nil, Block(_ :: _)) if !t.isInstanceOf[VoidType] => true
+    case _ => false
+  }    
     
-  }
+//  private def isGetter(method: Method): Boolean = { 
+//    isEmpty(method.getParameters) && 
+//    !method.getType.isInstanceOf[VoidType] &&
+//    !method.getBody.isEmpty
+//    
+//  }
   
 }

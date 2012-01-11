@@ -88,24 +88,13 @@ trait Helpers {
     case Stmt(a: Assign) => a
     case _ => null
   }
-      
-//  def getAssignment(s: Statement): Assign = {
-//    s.asInstanceOf[ExpressionStmt].getExpression.asInstanceOf[Assign]
-//  }
-  
+        
   def isAssignment(s: Statement): Boolean = s match {
-    case Stmt(Assign(Assign.assign,_,_)) => true
+    //case Stmt(Assign(Assign.assign,_,_)) => true
+    case Stmt(_ assign _) => true
     case _ => false
   }
-  
-//  def isAssignment(s: Statement): Boolean = s match {
-//    case s: ExpressionStmt => s.getExpression match {
-//      case a: Assign => a.getOperator.toString == "assign"
-//      case _ => false
-//    }
-//    case _ => false
-//  }
-  
+    
   def isThisConstructor(s: Statement): Boolean = s match {
     case ci: ConstructorInvocation => ci.isThis
     case _ => false
@@ -124,46 +113,26 @@ trait Helpers {
     case Method("hashCode", Type.Int, Nil, _) => true
     case _ => false
   }
-  
-//  def isHashCode(n: Method): Boolean = {
-//    n.getName == "hashCode" && isEmpty(n.getParameters) 
-//  }
-  
+    
   def isEquals(n: Method): Boolean = n match {
     case Method("equals", Type.Boolean,_ :: Nil, _) => true
     case _ => false
   }
-  
-//  def isEquals(n: Method): Boolean = {
-//    n.getName == "equals" && n.getParameters != null && n.getParameters.size == 1
-//  }
-  
+    
   def isToString(n: Method): Boolean = n match {
     case Method("toString", Type.String, Nil, _) => true
     case _ => false
   }
-  
-//  def isToString(n: Method): Boolean = {
-//    n.getName == "toString" && isEmpty(n.getParameters)
-//  }
-   
-  
+    
   def isReturnFieldStmt(stmt: Statement): Boolean = stmt match {
-    case Return(_: Name) | Return(_: FieldAccess) => true
+    case Return(field(_)) => true
     case _ => false
   }
   
   def isSetFieldStmt(stmt: Statement): Boolean = stmt match {
-    case Stmt(Assign(Assign.assign,_,_)) => true  
+    //case Stmt(Assign(Assign.assign,_,_)) => true
+    case Stmt(_ assign _) => true
     case _ => false
   }
-    
-//  def isSetFieldStmt(stmt: Statement): Boolean = stmt match {
-//    case e: ExpressionStmt => e.getExpression match {
-//      case a: Assign => a.getOperator.toString == "assign"
-//      case _ => false
-//    }
-//    case _ => false
-//  }  
-  
+      
 }

@@ -40,13 +40,5 @@ class RemoveAsserts extends UnitTransformerBase {
     case Method("Assert", _, a :: rest) => a.accept(this, arg)
     case _ => super.visit(n, arg)
   }
-  
-//  override def visit(n: MethodCall, arg: CompilationUnit) = {
-//    if (methods.contains(n.getName) && n.getScope != null && n.getScope.toString == "Assert") {
-//      n.getArgs.get(0)
-//    } else {
-//      super.visit(n, arg)
-//    } 
-//  }
-  
+    
 }

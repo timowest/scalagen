@@ -43,18 +43,41 @@ object UnitTransformer extends Helpers {
   val BEAN_PROPERTY_IMPORT = new Import("scala.reflect.BeanProperty", false, false)
 
   val BEAN_PROPERTY = new MarkerAnnotation("BeanProperty")
+    
+  object assign {
+    def unapply(a: Assign) = if (a.getOperator == Assign.assign) Some(a.getTarget, a.getValue) else None
+  }
+    
+  object equals {
+    def unapply(b: Binary) = if (b.getOperator == Binary.equals) Some(b.getLeft, b.getRight) else None 
+  }
+    
+  object field {
+    def unapply(f: Expression) = f match {
+      case Field(scope, field) if scope == "this" => Some(field)
+      case Name(field) => Some(field)
+      case _ => None
+    }
+  }
+  
+  object isnull {
+    def unapply(b: Binary) = {
+      if (b.getOperator == Binary.equals && b.getRight.isInstanceOf[Null]) Some(b.getLeft)
+      else None        
+    }
+  }
   
   type Annotation = AnnotationExpr 
   
   type AnnotationMember = AnnotationMemberDeclaration
-  
+    
   object Assign {
     val assign = AssignExpr.Operator.assign
     def unapply(a: Assign) = Some(a.getOperator, a.getTarget, a.getValue)
   }
   
   type Assign = AssignExpr
-  
+    
   object Binary {
     val or = BinaryExpr.Operator.or
     val and = BinaryExpr.Operator.and
@@ -111,10 +134,16 @@ object UnitTransformer extends Helpers {
   object Field {
     def unapply(f: FieldAccess) = Some(safeToString(f.getScope), f.getField)
   }
-  
+    
   type Field = FieldDeclaration
     
   type FieldAccess = FieldAccessExpr
+  
+  object If {
+    def unapply(i: If) = Some(i.getCondition, i.getThenStmt, i.getElseStmt)
+  }
+  
+  type If = IfStmt
   
   type Import = ImportDeclaration
   
@@ -140,7 +169,9 @@ object UnitTransformer extends Helpers {
   }
   
   type Name = NameExpr
-  
+    
+  type Null = NullLiteralExpr
+    
   object Return {
     def unapply(r: Return) = Some(r.getExpr)
   }
