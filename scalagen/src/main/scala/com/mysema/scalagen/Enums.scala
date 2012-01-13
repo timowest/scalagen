@@ -13,14 +13,10 @@
  */
 package com.mysema.scalagen
 
-import japa.parser.ast.CompilationUnit
-import japa.parser.ast.body._
-import japa.parser.ast.stmt._
-import japa.parser.ast.expr._
+import japa.parser.ast.body.ModifierSet
 import japa.parser.ast.visitor._
 import java.util.ArrayList
 import UnitTransformer._
-import japa.parser.ast.`type`.ClassOrInterfaceType
 
 object Enums extends Enums
 
@@ -29,18 +25,19 @@ object Enums extends Enums
  */
 class Enums extends UnitTransformerBase {
   
-  private val enumerationType = new ClassOrInterfaceType("Enumeration")
+  private val enumerationType = new ClassOrInterface("Enumeration")
   
-  private val valType = new ClassOrInterfaceType("Val")
+  private val valType = new ClassOrInterface("Val")
   
-  private val valueType = new ClassOrInterfaceType("Value")
+  private val valueType = new ClassOrInterface("Value")
   
   def transform(cu: CompilationUnit): CompilationUnit = {
     cu.accept(this, cu).asInstanceOf[CompilationUnit] 
   }   
     
-  override def visit(n: EnumDeclaration, arg: CompilationUnit) = {
-    val clazz = new ClassOrInterface()
+  override def visit(n: EnumDecl, arg: CompilationUnit) = {
+    // transform enums into Scala Enumerations
+    val clazz = new ClassOrInterfaceDecl()
     clazz.setExtends(enumerationType.asList)
     clazz.setName(n.getName)
     clazz.setModifiers(OBJECT)
@@ -48,25 +45,25 @@ class Enums extends UnitTransformerBase {
     clazz
   }
   
-  private def createMembers(n: EnumDeclaration): JavaList[BodyDeclaration] = {
-    val typeDecl = new ClassOrInterface(0, false, n.getName)
+  private def createMembers(n: EnumDecl): JavaList[BodyDecl] = {
+    val typeDecl = new ClassOrInterfaceDecl(0, false, n.getName)
     typeDecl.setExtends(valType.asList)
     typeDecl.setImplements(n.getImplements)
-    typeDecl.setMembers(new ArrayList[BodyDeclaration])
+    typeDecl.setMembers(new ArrayList[BodyDecl])
     typeDecl.getMembers.addAll(n.getMembers.filterNot(isStatic))
     
     // entries
-    val ty = new ClassOrInterfaceType(n.getName)
+    val ty = new ClassOrInterface(n.getName)
     val entries = n.getEntries.map(e => {
-      val init = new ObjectCreationExpr(null, ty, e.getArgs)
-      new FieldDeclaration(ModifierSet.FINAL, ty, new VariableDeclarator(e.getName, init)) })
+      val init = new ObjectCreation(null, ty, e.getArgs)
+      new Field(ModifierSet.FINAL, ty, new VariableDeclarator(e.getName, init)) })
         
     // conversion function
-    val conversion = new MethodDeclaration(IMPLICIT, ty, "convertValue")
-    conversion.setBody(new Return(new CastExpr(ty, "v")))
+    val conversion = new Method(IMPLICIT, ty, "convertValue")
+    conversion.setBody(new Return(new Cast(ty, "v")))
     conversion.setParameters(new Parameter(valueType, "v").asList)
           
-    val members = new ArrayList[BodyDeclaration]()
+    val members = new ArrayList[BodyDecl]()
     members.addAll(entries)
     members.add(typeDecl)       
     members.addAll(n.getMembers.filter(isStatic))

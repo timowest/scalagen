@@ -281,7 +281,7 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
   def visit(n: QualifiedNameExpr, arg: Context) {
     n.getQualifier.accept(this, arg)
     printer.print(".")
-    printer.print(n.getName)
+    visitName(n.getName)
   }
   
   def visit(n: ImportDeclaration, arg: Context) {
@@ -930,18 +930,23 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
   }
 
   def visit(n: VariableDeclarationExpr, arg: Context) {
+    val asParameter = n.getModifiers == -1
     var modifier = if (ModifierSet.isFinal(n.getModifiers)) "val " else "var "
     var i = n.getVars.iterator()
     while (i.hasNext) {
       var v = i.next()
       printAnnotations(n.getAnnotations, arg)
-      printer.print(modifier)
+      if (!asParameter) {
+        printer.print(modifier)  
+      }      
       if (v.getInit == null || v.getInit.isInstanceOf[NullLiteralExpr]){
         v.getId.accept(this, arg)
         printer.print(": ")
         n.getType.accept(this, arg)
-        printer.print(" = ")
-        printer.print(if (v.getInit() == null) "_" else "null")
+        if (!asParameter) {
+          printer.print(" = ")
+          printer.print(if (v.getInit() == null) "_" else "null")  
+        }        
       } else {
         v.accept(this, arg)
       }
@@ -965,6 +970,10 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
   }
 
   def visit(n: BlockStmt, arg: Context) {
+    if (!isEmpty(n.getStmts) && n.getStmts.get(0).isInstanceOf[SwitchStmt]) {
+      n.getStmts.get(0).accept(this, arg)
+      return
+    }    
     printer.printLn("{")
     if (n.getStmts != null) {
       printer.indent()
@@ -1319,12 +1328,11 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
     printJavadoc(n.getJavaDoc, arg)
     printMemberAnnotations(n.getAnnotations, arg)
     printModifiers(n.getModifiers)
+    visitName(n.getName)    
+    printer.print(": ")
     n.getType.accept(this, arg)
-    printer.print(" ")
-    visitName(n.getName)
-    printer.print("()")
     if (n.getDefaultValue != null) {
-      printer.print(" default ")
+      printer.print("= ")
       n.getDefaultValue.accept(this, arg)
     }
   }

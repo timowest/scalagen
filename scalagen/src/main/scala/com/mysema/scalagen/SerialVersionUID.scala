@@ -28,8 +28,8 @@ class SerialVersionUID extends UnitTransformerBase {
     cu.accept(this, cu).asInstanceOf[CompilationUnit] 
   }  
   
-  override def visit(nn: ClassOrInterface, cu: CompilationUnit): ClassOrInterface = {      
-    val n = super.visit(nn, cu).asInstanceOf[ClassOrInterface]
+  override def visit(nn: ClassOrInterfaceDecl, cu: CompilationUnit): ClassOrInterfaceDecl = {      
+    val n = super.visit(nn, cu).asInstanceOf[ClassOrInterfaceDecl]
     if (n.getMembers == null) {
       return n
     }

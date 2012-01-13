@@ -14,10 +14,7 @@
  */
 package com.mysema.scalagen
 
-import japa.parser.ast.Node
-import japa.parser.ast.body._
-import japa.parser.ast.expr._
-import japa.parser.ast.stmt._
+import japa.parser.ast.body.ModifierSet
 import _root_.scala.collection.JavaConversions
 import _root_.scala.collection.Set
 
@@ -55,9 +52,9 @@ trait Helpers {
     def removeModifier(mod: Int) = ModifierSet.removeModifier(i,mod)    
   }  
   
-  implicit def toRichBlock(b: BlockStmt) = new RichBlockStmt(b)
+  implicit def toRichBlock(b: Block) = new RichBlockStmt(b)
   
-  class RichBlockStmt(b: BlockStmt) {
+  class RichBlockStmt(b: Block) {
     def add(s: Statement) = b.getStmts.add(s)
     def apply(i: Int) = b.getStmts.get(i)
     def isEmpty = b.getStmts == null || b.getStmts.isEmpty
@@ -76,11 +73,11 @@ trait Helpers {
     }
   }  
    
-  @inline
+  //@inline
   def isEmpty(col: JavaCollection[_]): Boolean = col == null || col.isEmpty
     
   def extract(stmt: Statement): Statement = stmt match {
-    case b: BlockStmt => if (b.size == 1) b(0) else b
+    case b: Block => if (b.size == 1) b(0) else b
     case _ => stmt
   } 
   
@@ -90,8 +87,7 @@ trait Helpers {
   }
         
   def isAssignment(s: Statement): Boolean = s match {
-    //case Stmt(Assign(Assign.assign,_,_)) => true
-    case Stmt(_ assign _) => true
+    case Stmt(_ set _) => true
     case _ => false
   }
     
@@ -100,9 +96,9 @@ trait Helpers {
     case _ => false
   }
   
-  def isStatic(member: BodyDeclaration): Boolean = member match {
-    case t: ClassOrInterface => t.getModifiers.isStatic || t.getModifiers.isObject || t.isInterface
-    case t: Type => t.getModifiers.isStatic || t.getModifiers.isObject
+  def isStatic(member: BodyDecl): Boolean = member match {
+    case t: ClassOrInterfaceDecl => t.getModifiers.isStatic || t.getModifiers.isObject || t.isInterface
+    case t: TypeDecl => t.getModifiers.isStatic || t.getModifiers.isObject
     case f: Field => f.getModifiers.isStatic
     case m: Method => m.getModifiers.isStatic
     case i: Initializer => i.isStatic
@@ -119,20 +115,19 @@ trait Helpers {
     case _ => false
   }
     
-  def isToString(n: Method): Boolean = n match {
-    case Method("toString", Type.String, Nil, _) => true
-    case _ => false
-  }
-    
   def isReturnFieldStmt(stmt: Statement): Boolean = stmt match {
     case Return(field(_)) => true
     case _ => false
   }
   
   def isSetFieldStmt(stmt: Statement): Boolean = stmt match {
-    //case Stmt(Assign(Assign.assign,_,_)) => true
-    case Stmt(_ assign _) => true
+    case Stmt(_ set _) => true
     case _ => false
   }
+  
+  def isToString(n: Method): Boolean = n match {
+    case Method("toString", Type.String, Nil, _) => true
+    case _ => false
+  }  
       
 }

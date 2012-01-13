@@ -1,7 +1,6 @@
 package com.mysema.scalagen
 
 //import japa.parser.ast.`type`._
-import japa.parser.ast.body._
 import org.junit.Test
 import org.junit.Assert._
 import UnitTransformer._

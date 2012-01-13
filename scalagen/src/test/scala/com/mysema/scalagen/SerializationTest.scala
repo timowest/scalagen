@@ -53,7 +53,7 @@ class SerializationTest extends AbstractParserTest {
     assertContains(sources, 
       "@SerialVersionUID(8667880104290226505L)",
       "val elementType = `type`.getComponentType.asInstanceOf[Class[T]]",
-      "override def equals(obj: Any): Boolean = {")
+      "override def equals(obj: Any): Boolean =")
     
   }
   

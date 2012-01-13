@@ -13,14 +13,7 @@
  */
 package com.mysema.scalagen
 
-import japa.parser.ast.CompilationUnit
 import japa.parser.ast.body.ModifierSet
-import japa.parser.ast.body.VariableDeclarator
-import japa.parser.ast.body.ClassOrInterfaceDeclaration
-import japa.parser.ast.`type`.PrimitiveType
-import japa.parser.ast.`type`.PrimitiveType.Primitive
-import japa.parser.ast.`type`.VoidType
-import japa.parser.ast.stmt.{ ExpressionStmt, Statement }
 import java.util.ArrayList
 import com.mysema.scala.BeanUtils
 import UnitTransformer._
@@ -43,14 +36,15 @@ class BeanProperties extends UnitTransformerBase {
     cu.accept(this, cu).asInstanceOf[CompilationUnit] 
   }  
   
-  override def visit(n: ClassOrInterface, cu: CompilationUnit): ClassOrInterface = {      
-    val t = super.visit(n, cu).asInstanceOf[ClassOrInterface]
+  override def visit(n: ClassOrInterfaceDecl, cu: CompilationUnit): ClassOrInterfaceDecl = {      
+    // merges getters and setters into properties
+    val t = super.visit(n, cu).asInstanceOf[ClassOrInterfaceDecl]
     
     // accessors
     val methods = t.getMembers.collect { case m: Method => m }
-    val getters = methods.filter(m => isGetter(m) || isBooleanGetter(m))
-      .map(m => (BeanUtils.uncapitalize(m.getName.substring(if (isGetter(m)) 3 else 2)),m)).toMap      
-    val setters = methods.filter(m => isSetter(m))
+    val getters = methods.filter(m => isBeanGetter(m) || isBooleanBeanGetter(m))
+      .map(m => (BeanUtils.uncapitalize(m.getName.substring(if (isBeanGetter(m)) 3 else 2)),m)).toMap      
+    val setters = methods.filter(m => isBeanSetter(m))
       .map(m => (BeanUtils.uncapitalize(m.getName.substring(3)), m)).toMap
    
     // fields with accessors
@@ -85,18 +79,18 @@ class BeanProperties extends UnitTransformerBase {
     t
   }
   
-  private def isGetter(method: Method): Boolean = method match {
+  private def isBeanGetter(method: Method): Boolean = method match {
     case Method(getter, t, Nil, Return(field(_))) => true
     case _ => false
   }
   
-  private def isBooleanGetter(method: Method): Boolean = method match {
+  private def isBooleanBeanGetter(method: Method): Boolean = method match {
     case Method(booleanGetter, Type.Boolean, Nil, Return(field(_))) => true
     case _ => false
   }
   
-  private def isSetter(method: Method): Boolean = method match {
-    case Method(setter, Type.Void, _ :: Nil, Stmt(_ assign _)) => true
+  private def isBeanSetter(method: Method): Boolean = method match {
+    case Method(setter, Type.Void, _ :: Nil, Stmt(_ set _)) => true
     case _ => false
   }
   

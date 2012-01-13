@@ -13,16 +13,10 @@
  */
 package com.mysema.scalagen
 
-import japa.parser.ast.CompilationUnit
-import japa.parser.ast.body._
-import japa.parser.ast.stmt._
-import japa.parser.ast.expr._
 import japa.parser.ast.visitor._
-import japa.parser.ast.`type`.ClassOrInterfaceType
 import java.util.ArrayList
 import japa.parser.ast.visitor.ModifierVisitorAdapter
 import UnitTransformer._
-
 
 object Annotations extends Annotations
 
@@ -32,32 +26,33 @@ object Annotations extends Annotations
  */
 class Annotations extends UnitTransformerBase {
   
-  private val staticAnnotationType = new ClassOrInterfaceType("StaticAnnotation")
+  private val staticAnnotationType = new ClassOrInterface("StaticAnnotation")
   
   def transform(cu: CompilationUnit): CompilationUnit = {
     cu.accept(this, cu).asInstanceOf[CompilationUnit] 
   }  
     
-  override def visit(n: AnnotationDeclaration, arg: CompilationUnit) = {
-    val clazz = new ClassOrInterface()
+  override def visit(n: AnnotationDecl, arg: CompilationUnit) = {
+    // turns annotations into StaticAnnotation subclasses
+    val clazz = new ClassOrInterfaceDecl()
     clazz.setName(n.getName)    
     clazz.setExtends(staticAnnotationType.asList)
     clazz.setMembers(createMembers(n))
     clazz
   }
   
-  private def createMembers(n: AnnotationDeclaration): JavaList[BodyDeclaration] = {
+  private def createMembers(n: AnnotationDecl): JavaList[BodyDecl] = {
     // TODO : default values
     val params = n.getMembers.collect { case m: AnnotationMember => m }
       .map(m => new Parameter(PROPERTY, m.getType, new VariableDeclaratorId(m.getName)))
       
-    val members = new ArrayList[BodyDeclaration]()
+    val members = new ArrayList[BodyDecl]()
     if (!params.isEmpty) {
       val constructor = new Constructor()
       val mutableParams = new ArrayList[Parameter]
       mutableParams.addAll(params)
       constructor.setParameters(mutableParams)
-      constructor.setBlock(new BlockStmt())
+      constructor.setBlock(new Block())
       members.add(constructor)
     }
     members

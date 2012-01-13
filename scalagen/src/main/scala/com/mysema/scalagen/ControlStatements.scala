@@ -13,10 +13,6 @@
  */
 package com.mysema.scalagen
 
-import japa.parser.ast.{CompilationUnit, Node}
-import japa.parser.ast.body._
-import japa.parser.ast.stmt._
-import japa.parser.ast.expr._
 import japa.parser.ast.visitor._
 import java.util.ArrayList
 import UnitTransformer._
@@ -32,41 +28,41 @@ class ControlStatements extends UnitTransformerBase {
     cu.accept(this, cu).asInstanceOf[CompilationUnit] 
   }  
         
-  override def visit(nn: ForStmt, arg: CompilationUnit): Node = {
+  override def visit(nn: For, arg: CompilationUnit): Node = {
     // transform
     //   for (int i = 0; i < x; i++) block 
     // into
     //   for (i <- 0 until x) block
-    val n = super.visit(nn, arg).asInstanceOf[ForStmt]    
+    val n = super.visit(nn, arg).asInstanceOf[For]    
     n match {
-      case For((init: VariableDeclaration) :: Nil, l less r, increment(_) :: Nil, _) => {
+      case For((init: VariableDeclaration) :: Nil, l lt r, incr(_) :: Nil, _) => {
         val until = new MethodCall(init.getVars.get(0).getInit, "until", r.asList)
         init.getVars.get(0).setInit(null)
-        new ForeachStmt(init, until, n.getBody)
+        new Foreach(init, until, n.getBody)
       }
       case _ => n
     }
   }
   
-  override def visit(nn: IfStmt, arg: CompilationUnit): Node = {
+  override def visit(nn: If, arg: CompilationUnit): Node = {
     // transform
     //   if (condition) target = x else target = y
     // into
     //   target = if (condition) e else y    
-    val n = super.visit(nn, arg).asInstanceOf[IfStmt]    
+    val n = super.visit(nn, arg).asInstanceOf[If]    
     n match {
-      case If(cond, Stmt(t1 assign v1), Stmt(t2 assign v2)) if t1 == t2 => {
+      case If(cond, Stmt(t1 set v1), Stmt(t2 set v2)) if t1 == t2 => {
         new ExpressionStmt(new Assign(t1, new Conditional(n.getCondition, v1, v2), Assign.assign))  
       }
       case _ => n
     }    
   }
   
-  override def visit(nn: SwitchEntryStmt, arg: CompilationUnit) = {    
+  override def visit(nn: SwitchEntry, arg: CompilationUnit) = {    
     // remove break
-    val n = super.visit(nn, arg).asInstanceOf[SwitchEntryStmt]
+    val n = super.visit(nn, arg).asInstanceOf[SwitchEntry]
     val size = if (n.getStmts == null) 0 else n.getStmts.size
-    if (size > 1 && n.getStmts.get(size-1).isInstanceOf[BreakStmt]) {
+    if (size > 1 && n.getStmts.get(size-1).isInstanceOf[Break]) {
       n.getStmts.remove(size-1)
     }
     n

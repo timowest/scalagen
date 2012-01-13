@@ -13,8 +13,6 @@
  */
 package com.mysema.scalagen
 
-import japa.parser.ast.CompilationUnit
-import japa.parser.ast.body.{BodyDeclaration, ModifierSet}
 import java.util.ArrayList
 import UnitTransformer._
 
@@ -34,7 +32,7 @@ class CompanionObject extends UnitTransformer {
     cu
   }
   
-  private def handleTypes(cu: CompilationUnit, types: Seq[Type], members: JavaList[_ >: Type]) {    
+  private def handleTypes(cu: CompilationUnit, types: Seq[TypeDecl], members: JavaList[_ >: TypeDecl]) {    
     types.foreach { t => handleType(cu,t) }
     
     // get companion objects
@@ -46,16 +44,16 @@ class CompanionObject extends UnitTransformer {
     }   
   }
     
-  private def handleType(cu: CompilationUnit, clazz: Type) {
+  private def handleType(cu: CompilationUnit, clazz: TypeDecl) {
     if (clazz.getMembers != null) {
-      val types = clazz.getMembers.collect { case t: Type => t }
+      val types = clazz.getMembers.collect { case t: TypeDecl => t }
         .filter(!_.getModifiers.isObject)    
       handleTypes(cu, types, clazz.getMembers)
     }   
   }  
   
-  private def handleClassAndCompanion(cu: CompilationUnit, members: JavaList[_ >: Type], 
-      clazz: Type, companion: Type) {
+  private def handleClassAndCompanion(cu: CompilationUnit, members: JavaList[_ >: TypeDecl], 
+      clazz: TypeDecl, companion: TypeDecl) {
     // add companion
     members.add(members.indexOf(clazz), companion)
     if (clazz.getMembers.isEmpty) {
@@ -78,15 +76,15 @@ class CompanionObject extends UnitTransformer {
     }
   }
 
-  private def getCompanionObject(t: Type): Type = {
+  private def getCompanionObject(t: TypeDecl): TypeDecl = {
     if (t.getMembers == null) {
       return null
     }
     
     val staticMembers = t.getMembers.filter(isStatic)
     if (!staticMembers.isEmpty) {
-      var companion = new ClassOrInterface(OBJECT, false, t.getName)
-      companion.setMembers(new ArrayList[Body]())
+      var companion = new ClassOrInterfaceDecl(OBJECT, false, t.getName)
+      companion.setMembers(new ArrayList[BodyDecl]())
       staticMembers.foreach(companion.getMembers.add(_))
       t.getMembers.removeAll(companion.getMembers)
       companion

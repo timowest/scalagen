@@ -36,7 +36,8 @@ object Converter {
     BeanProperties, 
     Properties,
     Constructors, 
-    Initializers))  
+    Initializers,
+    SimpleEquals))  
   
 }
 

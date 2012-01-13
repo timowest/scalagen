@@ -13,14 +13,7 @@
  */
 package com.mysema.scalagen
 
-import japa.parser.ast.CompilationUnit
 import japa.parser.ast.body.ModifierSet
-import japa.parser.ast.body.VariableDeclarator
-import japa.parser.ast.body.ClassOrInterfaceDeclaration
-import japa.parser.ast.`type`.PrimitiveType
-import japa.parser.ast.`type`.PrimitiveType.Primitive
-import japa.parser.ast.`type`.VoidType
-import japa.parser.ast.stmt.{ExpressionStmt, IfStmt, Statement}
 import java.util.ArrayList
 import com.mysema.scala.BeanUtils
 import UnitTransformer._
@@ -37,8 +30,8 @@ class Properties extends UnitTransformerBase {
     cu.accept(this, cu).asInstanceOf[CompilationUnit] 
   }  
   
-  override def visit(n: ClassOrInterface, cu: CompilationUnit): ClassOrInterface = {      
-    val t = super.visit(n, cu).asInstanceOf[ClassOrInterface]
+  override def visit(n: ClassOrInterfaceDecl, cu: CompilationUnit): ClassOrInterfaceDecl = {      
+    val t = super.visit(n, cu).asInstanceOf[ClassOrInterfaceDecl]
     
     // accessors
     val getters = t.getMembers.collect { case m: Method => m }
@@ -61,7 +54,7 @@ class Properties extends UnitTransformerBase {
       } else if (isLazyCreation(body,name)) {
         t.getMembers.remove(getter)
         // TODO : extract via match
-        val init = body(0).asInstanceOf[IfStmt]
+        val init = body(0).asInstanceOf[If]
           .getThenStmt.asInstanceOf[Block]
           .getStmts().get(0).asInstanceOf[ExpressionStmt]
           .getExpression.asInstanceOf[Assign]
@@ -73,11 +66,11 @@ class Properties extends UnitTransformerBase {
     }    
     t
   }
-  
-  // if (uncreated) { create } return
+    
   private def isLazyCreation(block: Block, f: String): Boolean = block match {
+    // if (uncreated) { create } return
     case Block(
-        If(isnull(field(`f`)), Stmt(field(`f`) assign init), null) :: 
+        If(isnull(field(`f`)), Stmt(field(`f`) set init), null) :: 
         Return(field(`f`)) :: Nil) => true
     case _ => false   
   }
@@ -86,12 +79,5 @@ class Properties extends UnitTransformerBase {
     case Method(n, t, Nil, Block(_ :: rest)) if !t.isInstanceOf[VoidType] => true
     case _ => false
   }    
-    
-//  private def isGetter(method: Method): Boolean = { 
-//    isEmpty(method.getParameters) && 
-//    !method.getType.isInstanceOf[VoidType] &&
-//    !method.getBody.isEmpty
-//    
-//  }
-  
+      
 }

@@ -13,10 +13,6 @@
  */
 package com.mysema.scalagen
 
-import japa.parser.ast.CompilationUnit
-import japa.parser.ast.body._
-import japa.parser.ast.stmt._
-import japa.parser.ast.expr._
 import java.util.ArrayList
 import UnitTransformer._
 
@@ -34,9 +30,9 @@ class Initializers extends UnitTransformer {
     cu
   }
   
-  private def transform(cu: CompilationUnit, t: Type) {    
+  private def transform(cu: CompilationUnit, t: TypeDecl) {    
     // transform sub types
-    t.getMembers.collect { case t: Type => t}.foreach(t => transform(cu, t))    
+    t.getMembers.collect { case t: TypeDecl => t}.foreach(t => transform(cu, t))    
     
     val initializers = t.getMembers.collect { case i: Initializer => i }
     if (!initializers.isEmpty) {
@@ -46,7 +42,7 @@ class Initializers extends UnitTransformer {
       for (i <- initializers) {
         val stmts = new java.util.HashSet[Statement]()
         for (stmt <- i.getBlock.getStmts) stmt match {
-          case Stmt((t: Name) assign v) if variables.contains(t.getName) => {
+          case Stmt((t: Name) set v) if variables.contains(t.getName) => {
             variables(t.getName).setInit(v)
             stmts.add(stmt)
           }

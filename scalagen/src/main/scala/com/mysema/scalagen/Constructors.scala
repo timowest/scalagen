@@ -13,10 +13,7 @@
  */
 package com.mysema.scalagen
 
-import japa.parser.ast.CompilationUnit
-import japa.parser.ast.body._
-import japa.parser.ast.stmt._
-import japa.parser.ast.expr._
+import japa.parser.ast.body.ModifierSet
 import java.util.ArrayList
 import UnitTransformer._
 
@@ -31,8 +28,8 @@ class Constructors extends UnitTransformerBase {
     cu.accept(this, cu).asInstanceOf[CompilationUnit] 
   }  
   
-  override def visit(n: ClassOrInterface, cu: CompilationUnit):  ClassOrInterface = {  
-    val t = super.visit(n, cu).asInstanceOf[ClassOrInterface]
+  override def visit(n: ClassOrInterfaceDecl, cu: CompilationUnit):  ClassOrInterfaceDecl = {  
+    val t = super.visit(n, cu).asInstanceOf[ClassOrInterfaceDecl]
     
     // get all constructors
     val constr = t.getMembers.collect { case c: Constructor => c }
@@ -77,7 +74,7 @@ class Constructors extends UnitTransformerBase {
     t
   }
   
-  private def processStatements(cu: CompilationUnit, t: Type, c: Constructor) {
+  private def processStatements(cu: CompilationUnit, t: TypeDecl, c: Constructor) {
     val fields = t.getMembers.collect { case f: Field => f }
     val variables = fields.flatMap(_.getVariables).map(v => (v.getId.getName, v)).toMap
     val variableToField = fields.flatMap(f => f.getVariables.map(v => (v.getId.getName,f)) ).toMap

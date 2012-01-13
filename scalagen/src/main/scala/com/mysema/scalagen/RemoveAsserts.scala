@@ -13,11 +13,6 @@
  */
 package com.mysema.scalagen
 
-import japa.parser.ast.CompilationUnit
-import japa.parser.ast.body._
-import japa.parser.ast.stmt._
-import japa.parser.ast.expr._
-import japa.parser.ast.visitor._
 import java.util.ArrayList
 import UnitTransformer._
 
