@@ -22,7 +22,7 @@ import java.util.Collections
 /**
  * 
  */
-abstract class ModifierVisitorAdapter[A] extends GenericVisitor[Node, A] {
+abstract class ModifierVisitor[A] extends GenericVisitor[Node, A] {
   
   private def filter[T <: Node](node: T, arg: A): T = {
     if (node != null) node.accept(this, arg).asInstanceOf[T] else node
