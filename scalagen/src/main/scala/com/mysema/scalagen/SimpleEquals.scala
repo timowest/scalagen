@@ -28,13 +28,19 @@ class SimpleEquals extends UnitTransformerBase {
   
   private val replacer = new ModifierVisitorAdapter[(Name,Name)]() {    
     
-//    override def visit(n: Block, arg: (Name,Name)) = { 
-//       val matched = n match {
-//         case Block(Stmt(newName set Cast(_,_)) :: Nil) => newName
-//         case _ => null
-//       }
-//       n
-//    }
+    override def visit(n: Block, arg: (Name,Name)) = { 
+      val visited = super.visit(n, arg)
+      val matched = n match {
+        case Block(Stmt(VariableDeclaration(_, Variable(newName, init) :: Nil)) :: Nil) if init == arg._1 => newName
+        case _ => null
+      }
+      if (matched != null) {
+        n.getStmts.remove(0)
+        super.visit(n, (new Name(matched),arg._2))
+      } else {
+        super.visit(n, arg)
+      }
+    }
     
     override def visit(n: Enclosed, arg: (Name,Name)) = {
       super.visit(n, arg) match  {

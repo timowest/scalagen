@@ -331,7 +331,7 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
     if (n.getImplements != null) {
       superTypes.addAll(n.getImplements)
     }
-    if (printer.lineLength > 80) {
+    if (printer.lineLength > 75) {
       printer.printLn()
       printer.print("   ")
     }    
