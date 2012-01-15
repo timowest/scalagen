@@ -27,12 +27,7 @@ import org.apache.commons.io.FileUtils
 object ConvertQuerydsl extends AbstractParserTest {
   
   def main(args: Array[String]) {
-    Converter.instance.convert(
-        new File("../../../querydsl/querydsl-core/src/main/java"),
-        new File("target/querydsl-core"))
-    Converter.instance.convert(
-        new File("../../../querydsl/querydsl-sql/src/main/java"),
-        new File("target/querydsl-sql"))    
+    Converter.instance.convert(new File("../../../querydsl"), new File("target/querydsl"))    
   }
   
 }

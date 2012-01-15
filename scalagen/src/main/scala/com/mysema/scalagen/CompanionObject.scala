@@ -22,12 +22,15 @@ object CompanionObject extends CompanionObject
  * CompanionObject moves static members into companion objects
  */
 // TODO : use ModifierVisitorAdapter
+// TODO : get totally rid of mutable lists
 class CompanionObject extends UnitTransformer {
 
   def transform(cu: CompilationUnit): CompilationUnit = {
     if (cu.getTypes != null) {
       val types = cu.getTypes.filter(!_.getModifiers.isObject)
-      handleTypes(cu, types, cu.getTypes)
+      val cuTypes = new ArrayList[TypeDecl](cu.getTypes)
+      handleTypes(cu, types, cuTypes)
+      cu.setTypes(cuTypes)
     }
     cu
   }
@@ -48,7 +51,9 @@ class CompanionObject extends UnitTransformer {
     if (clazz.getMembers != null) {
       val types = clazz.getMembers.collect { case t: TypeDecl => t }
         .filter(!_.getModifiers.isObject)    
-      handleTypes(cu, types, clazz.getMembers)
+      val members = new ArrayList[BodyDecl](clazz.getMembers)
+      handleTypes(cu, types, members)
+      clazz.setMembers(members)
     }   
   }  
   
@@ -72,7 +77,7 @@ class CompanionObject extends UnitTransformer {
 
     // add import for companion object members, if class has not been removed
     if (members.contains(clazz)) {
-      cu.getImports.add(new Import(clazz.getName, false, true))
+      cu.setImports(cu.getImports :+ new Import(clazz.getName, false, true))
     }
   }
 
@@ -83,10 +88,9 @@ class CompanionObject extends UnitTransformer {
     
     val staticMembers = t.getMembers.filter(isStatic)
     if (!staticMembers.isEmpty) {
+      t.setMembers(t.getMembers -- staticMembers)
       var companion = new ClassOrInterfaceDecl(OBJECT, false, t.getName)
-      companion.setMembers(new ArrayList[BodyDecl]())
-      staticMembers.foreach(companion.getMembers.add(_))
-      t.getMembers.removeAll(companion.getMembers)
+      companion.setMembers(staticMembers)
       companion
     } else {
       null

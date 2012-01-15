@@ -26,7 +26,7 @@ class SimpleEquals extends UnitTransformerBase {
   
   private val returnFalse: Statement = new Return(new BooleanLiteral(false))
   
-  private val replacer = new ModifierVisitorAdapter[(Name,Name)]() {    
+  private val replacer = new ModifierVisitor[(Name,Name)]() {    
     
     override def visit(n: Block, arg: (Name,Name)) = { 
       val visited = super.visit(n, arg)
@@ -35,7 +35,8 @@ class SimpleEquals extends UnitTransformerBase {
         case _ => null
       }
       if (matched != null) {
-        n.getStmts.remove(0)
+        //n.getStmts.remove(0)
+        n.setStmts(n.getStmts.drop(1))
         super.visit(n, (new Name(matched),arg._2))
       } else {
         super.visit(n, arg)
@@ -82,7 +83,7 @@ class SimpleEquals extends UnitTransformerBase {
           case _ => null
         }
         if (converted != null) {
-          n.setBody(new Block(converted.asList)) 
+          n.setBody(new Block(converted :: Nil)) 
         }
         n
       }
@@ -91,17 +92,15 @@ class SimpleEquals extends UnitTransformerBase {
   }
   
   private def createSwitch(name: String, t: Type, action: Statement): Statement = {
-    //   obj match {
-    //     case obj: JoinFlag => obj.flag == flag
-    //     case _ => false
-    //   }    
+    //  obj match {
+    //    case obj: JoinFlag => obj.flag == flag
+    //    case _ => false
+    //  }    
     val selector = new Name(name)
     val simplified = action.accept(replacer, (selector,selector)).asInstanceOf[Statement]    
-    val matches = new SwitchEntry(VariableDeclaration(-1,name,t), simplified.asList)
-    val doesnt  = new SwitchEntry(null, returnFalse.asList)       
-    val entries = new ArrayList[SwitchEntry]
-    entries.addAll(matches :: doesnt :: Nil)
-    new Switch(selector, entries)
+    val matches = new SwitchEntry(VariableDeclaration(-1,name,t), simplified :: Nil)
+    val doesnt  = new SwitchEntry(null, returnFalse :: Nil)       
+    new Switch(selector, matches :: doesnt :: Nil)
   }
   
     

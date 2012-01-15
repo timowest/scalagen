@@ -27,6 +27,8 @@ import org.apache.commons.lang3.StringUtils
 
 object ScalaDumpVisitor {
     
+  private val NL_THRESHOLD = 100
+  
   private val PARAMETRIZED = Set("Class","Comparable","Enum","Iterable")
   
   private val UTIL_PARAMETRIZED = Set("Collection","List","Set","Map")
@@ -35,9 +37,11 @@ object ScalaDumpVisitor {
   
   private val SKIPPED_ANNOTATIONS = Set("Override","SuppressWarnings","Nullable")
   
-  private val PRIMITIVES = Set("Boolean","Byte","Character","Double","Float","Integer","Long","Short")
+  private val PRIMITIVES = Map("Boolean"->"Boolean","Byte"->"Byte","Character"->"Char","Double"->"Double",
+      "Float"->"Float","Integer"->"Int","Long"->"Long","Short"->"Short")
   
-  private val SHORT_FORM = Set("query","eq","ne","lt","until","gt","size","hasNext","toString","hashCode","equals","!=","keys","values","length")
+  private val SHORT_FORM = Set("eq","equals","gt","hashCode","hasNext","keys","keySet","length","lt","ne",
+      "query","size","toString","until","values","!=")
   
   private val RESERVED = Set("def","match","object","type","val","var")
   
@@ -53,7 +57,6 @@ object ScalaDumpVisitor {
     var returnOn = false
     var typeArg = false
     var imports = Map[String,String]()
-    //var split = false
   }
   
 }
@@ -196,8 +199,12 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
       while (i.hasNext) {
         var e = i.next()
         e.accept(this, arg)
-        if (i.hasNext) {
+        if (i.hasNext) {          
           printer.print(", ")
+          if (printer.lineLength > NL_THRESHOLD) {
+            printer.printLn()
+            printer.print("  ")
+          }
         }
       }
     }
@@ -214,18 +221,16 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
     if (n.getPackage != null) {
       n.getPackage.accept(this, arg)
     }
-    if (n.getImports != null) {
-      for (i <- n.getImports) {
-        i.accept(this, arg)
-      }      
-    }
+    for (i <- n.getImports) {
+      i.accept(this, arg)
+    }  
     
     arg.imports = n.getImports
       .filter(i => !i.isAsterisk && !i.isStatic)
       .map(i => split(i.getName).swap).toMap
     
-    printer.print("//remove if not needed\n")
-    printer.print("import scala.collection.JavaConversions._\n")
+    printer.printLn("//remove if not needed")
+    printer.printLn("import scala.collection.JavaConversions._")
     printer.printLn()
     
     if (n.getPackage != null && !isEmpty(n.getPackage.getAnnotations)) {
@@ -315,6 +320,9 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
     printer.print(n.getName)
     printTypeParameters(n.getTypeParameters, arg)
     var constr = getFirstConstructor(n.getMembers)
+    if (constr != null) {
+      n.setMembers(n.getMembers - constr)
+    }
     var superInvocation: Option[ExplicitConstructorInvocationStmt] = None
     if (constr != null) {
       if (!isEmpty(constr.getParameters) || !constr.getModifiers.isPublic) {
@@ -340,7 +348,7 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
       var i = superTypes.iterator()
       i.next().accept(this, arg)
       superInvocation.foreach { s => 
-        constr.getBlock.getStmts.remove(s)
+        constr.getBlock.remove(s)
         printArguments(s.getArgs, arg)
       }
       while (i.hasNext) {
@@ -362,15 +370,7 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
     if (members == null) {
       return null
     }
-    var i = members.iterator()
-    while (i.hasNext) {
-      var member = i.next()
-      if (member.isInstanceOf[ConstructorDeclaration]) {
-        i.remove()
-        return member.asInstanceOf[ConstructorDeclaration]
-      }
-    }
-    null
+    members.collectFirst({ case c: ConstructorDeclaration => c }).getOrElse(null)    
   }
 
   def visit(n: EmptyTypeDeclaration, arg: Context) {
@@ -396,14 +396,12 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
       printer.print("java.lang.")
     }
     if (n.getName == "Object") {
-      if (arg.inObjectEquals || arg.typeArg) {
-        printer.print("Any") 
-      } else {
-        printer.print("AnyRef")
-      }
+      printer.print(if (arg.inObjectEquals || arg.typeArg) "Any" else "AnyRef")      
     } else if (n.getScope == null && n.getName == "Array") { 
       // TODO : only if Array import is present
       printer.print("_Array")
+//    } else if (PRIMITIVES.contains(n.getName) && (arg.classOf || arg.typeArg)) {
+//      printer.print(PRIMITIVES(n.getName))
     } else {
       printer.print(n.getName)  
     }
@@ -746,7 +744,7 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
       visitName(n.getName)
     }   
     printTypeArgs(n.getTypeArgs, arg)
-    if (n.getName == "asList" && n.getScope != null && n.getScope.toString == "Arrays" && n.getArgs.size == 1) {
+    if (n.getName == "asList" && n.getScope != null && n.getScope.toString == "Arrays" && args == 1) {
       // assume Arrays.asList is called with an array argument
       printer.print("(")
       n.getArgs().get(0).accept(this, arg)
@@ -883,7 +881,7 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
     if (n.getBody != null) {
       if (!(n.getType.isInstanceOf[VoidType])) {
         printer.print(" = ")
-        if (n.getBody.getStmts.size == 1) {
+        if (n.getBody.getStmts.size == 1 && printer.lineLength < NL_THRESHOLD) {
           val str = print(n.getBody.getStmts.get(0), arg)
           if (str.length < 40) {
             printer.print(str)
@@ -1195,7 +1193,7 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
     
     var body = n.getBody
     while (isUnwrapped(body)) {
-      extract(body) match {
+      Types.extract(body) match {
         case fe: ForeachStmt => {
           printer.print("; ")
           fe.getVariable.getVars.get(0).accept(this, arg)
@@ -1216,7 +1214,7 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
     
   }
   
-  private def isUnwrapped(stmt: Statement): Boolean = extract(stmt) match {
+  private def isUnwrapped(stmt: Statement): Boolean = Types.extract(stmt) match {
     case foreach: ForeachStmt => true
     case ifStmt: IfStmt => ifStmt.getElseStmt() == null
     case _ => false
@@ -1243,7 +1241,7 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
     if (n.getUpdate != null && n.getBody.isInstanceOf[BlockStmt]) {
       // merge updates into block
       val block = n.getBody.asInstanceOf[BlockStmt]
-      block.getStmts.addAll(n.getUpdate.map(new ExpressionStmt(_)))
+      block.addAll(n.getUpdate.map(new ExpressionStmt(_)))
       block.accept(this, arg)
       
     } else {

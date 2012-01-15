@@ -57,24 +57,22 @@ class BeanProperties extends UnitTransformerBase {
     // remove accessors 
     for ( (name,field) <- fields) {
       var getter = getters(name)
-      t.getMembers.remove(getter)
-      setters.get(name).foreach { t.getMembers.remove(_) }
+      //t.getMembers.remove(getter)
+      t.setMembers(t.getMembers - getter)
+      setters.get(name).foreach { s => t.setMembers(t.getMembers - s) }
 
       // make field public
       val isFinal = field.getModifiers.isFinal
       field.setModifiers(getter.getModifiers
           .addModifier(if (isFinal) ModifierSet.FINAL else 0));
-      if (field.getAnnotations == null) {
-        field.setAnnotations(new ArrayList[Annotation]())
-      }
-      if (!field.getAnnotations.contains(BEAN_PROPERTY)) {
-        field.getAnnotations.add(BEAN_PROPERTY)
-      }
+      if (field.getAnnotations == null || !field.getAnnotations.contains(BEAN_PROPERTY)) {
+        field.setAnnotations(field.getAnnotations :+ BEAN_PROPERTY)
+      }      
     }
     
     // add BeanProperty import, if properties have been found
     if (!fields.isEmpty && !cu.getImports.contains(BEAN_PROPERTY_IMPORT)) {
-      cu.getImports.add(BEAN_PROPERTY_IMPORT)
+      cu.setImports(cu.getImports :+ BEAN_PROPERTY_IMPORT)
     }
     t
   }

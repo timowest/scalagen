@@ -21,18 +21,17 @@ object Initializers extends Initializers
 /**
  * Initializers normalizes initializer blocks
  */
-class Initializers extends UnitTransformer {
+class Initializers extends UnitTransformerBase {
   
   def transform(cu: CompilationUnit): CompilationUnit = {
-    for (t <- cu.getTypes if t.getMembers != null) {
-      transform(cu, t)
-    }
-    cu
-  }
+    cu.accept(this, cu).asInstanceOf[CompilationUnit] 
+  }  
   
-  private def transform(cu: CompilationUnit, t: TypeDecl) {    
-    // transform sub types
-    t.getMembers.collect { case t: TypeDecl => t}.foreach(t => transform(cu, t))    
+  override def visit(ci: ClassOrInterfaceDecl, cu: CompilationUnit): Node = {
+    val t = super.visit(ci, cu).asInstanceOf[ClassOrInterfaceDecl]
+    if (t.getMembers == null) {
+      return t
+    }
     
     val initializers = t.getMembers.collect { case i: Initializer => i }
     if (!initializers.isEmpty) {
@@ -40,35 +39,19 @@ class Initializers extends UnitTransformer {
       val variables = fields.flatMap(_.getVariables).map(v => (v.getId.getName, v)).toMap
       
       for (i <- initializers) {
-        val stmts = new java.util.HashSet[Statement]()
-        for (stmt <- i.getBlock.getStmts) stmt match {
+        i.getBlock.setStmts(i.getBlock.getStmts.filter(_ match {
           case Stmt((t: Name) set v) if variables.contains(t.getName) => {
             variables(t.getName).setInit(v)
-            stmts.add(stmt)
+            false
           }
-          case _ => 
-        }
-        i.getBlock.removeAll(stmts)
+          case _ => true
+        }))
       }
       
       // remove empty initializers
-      for (i <- initializers if i.getBlock.isEmpty) {
-        t.getMembers.remove(i)
-      }
+      t.setMembers( t.getMembers -- initializers.filter(_.getBlock.isEmpty) )      
     }
+    t
   }
-
-//      for (i <- initializers) {
-//        val stmts = new java.util.HashSet[Statement]()
-//        for (stmt <- i.getBlock.getStmts if isAssignment(stmt)) {
-//          val assign = getAssignment(stmt)
-//          if (assign.getTarget.isInstanceOf[Name]) {
-//            val namedTarget = assign.getTarget.asInstanceOf[Name]
-//            if (variables.contains(namedTarget.getName)) {
-//              variables(namedTarget.getName).setInit(assign.getValue)
-//              stmts.add(stmt)
-//            }
-//          }
-//        }  
   
 }

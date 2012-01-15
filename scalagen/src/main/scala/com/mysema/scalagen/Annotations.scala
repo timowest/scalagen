@@ -36,7 +36,7 @@ class Annotations extends UnitTransformerBase {
     // turns annotations into StaticAnnotation subclasses
     val clazz = new ClassOrInterfaceDecl()
     clazz.setName(n.getName)    
-    clazz.setExtends(staticAnnotationType.asList)
+    clazz.setExtends(staticAnnotationType :: Nil)
     clazz.setMembers(createMembers(n))
     clazz
   }
@@ -46,16 +46,14 @@ class Annotations extends UnitTransformerBase {
     val params = n.getMembers.collect { case m: AnnotationMember => m }
       .map(m => new Parameter(PROPERTY, m.getType, new VariableDeclaratorId(m.getName)))
       
-    val members = new ArrayList[BodyDecl]()
     if (!params.isEmpty) {
       val constructor = new Constructor()
-      val mutableParams = new ArrayList[Parameter]
-      mutableParams.addAll(params)
-      constructor.setParameters(mutableParams)
+      constructor.setParameters(params)
       constructor.setBlock(new Block())
-      members.add(constructor)
+      constructor :: Nil
+    } else {
+      Nil
     }
-    members
   }
     
 }  

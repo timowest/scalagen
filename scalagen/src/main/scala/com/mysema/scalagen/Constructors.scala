@@ -30,6 +30,8 @@ class Constructors extends UnitTransformerBase {
   
   override def visit(n: ClassOrInterfaceDecl, cu: CompilationUnit):  ClassOrInterfaceDecl = {  
     val t = super.visit(n, cu).asInstanceOf[ClassOrInterfaceDecl]
+    // make members list mutable
+    t.setMembers(new ArrayList[BodyDecl](t.getMembers))
     
     // get all constructors
     val constr = t.getMembers.collect { case c: Constructor => c }
@@ -68,7 +70,8 @@ class Constructors extends UnitTransformerBase {
     t.getMembers.collect { case c: Constructor => c }.filter(_ != c)
       .foreach { c =>
         if (!c.getBlock.isEmpty && !c.getBlock()(0).isInstanceOf[ConstructorInvocation]) {
-          c.getBlock.getStmts.add(0, new ConstructorInvocation(true, null, null))
+          //c.getBlock.getStmts.add(0, new ConstructorInvocation(true, null, null))
+          c.getBlock.setStmts(new ConstructorInvocation(true, null, null) :: c.getBlock.getStmts)
         }
       }
     t
@@ -98,7 +101,8 @@ class Constructors extends UnitTransformerBase {
             param.setId(namedTarget.getName)
             copyAnnotationsAndModifiers(field, param)
             // remove field
-            field.getVariables.remove(variables(namedTarget.getName))
+            //field.getVariables.remove(variables(namedTarget.getName))
+            field.setVariables(field.getVariables - variables(namedTarget.getName))
           } else { // field = ?!?
             variables(namedTarget.getName).setInit(assign.getValue)              
           }          
@@ -121,7 +125,8 @@ class Constructors extends UnitTransformerBase {
         c.getParameters.find(_.getId.getName == fieldAccess.getField)
           .foreach(copyAnnotationsAndModifiers(field,_))
         // remove field, as constructor parameter can be used
-        field.getVariables.remove(variables(fieldAccess.getField))  
+        //field.getVariables.remove(variables(fieldAccess.getField))
+        field.setVariables(field.getVariables - variables(fieldAccess.getField))
          
       } else {
         // remove statement, put init to field
@@ -133,12 +138,7 @@ class Constructors extends UnitTransformerBase {
   
   private def copyAnnotationsAndModifiers(f: Field, p: Parameter) {
     if (f.getAnnotations != null) {
-      if (p.getAnnotations == null) {
-        p.setAnnotations(new ArrayList[Annotation]())
-      }
-      for (a <- f.getAnnotations if !p.getAnnotations.contains(a)) {
-        p.getAnnotations.add(a)
-      }  
+      p.setAnnotations(p.getAnnotations.union(f.getAnnotations))
     }
     
     val modifiers = f.getModifiers.removeModifier(ModifierSet.PRIVATE).addModifier(PROPERTY)

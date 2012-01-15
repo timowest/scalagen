@@ -70,7 +70,7 @@ class Converter(encoding: String, transformers: List[UnitTransformer]) {
     }    
     val transformed = transformers.foldLeft(unit) { case (u,t) => t.transform(u) }    
     var visitor = new ScalaDumpVisitor()
-    unit.accept(visitor, new ScalaDumpVisitor.Context())
+    transformed.accept(visitor, new ScalaDumpVisitor.Context())
     visitor.getSource
   }
   
@@ -85,7 +85,7 @@ class Converter(encoding: String, transformers: List[UnitTransformer]) {
         .filter(f => f.isDirectory || f.getName.endsWith(".java"))
         .flatMap(f => getJavaFiles(f))
     } else {
-      if (file.exists) List(file) else Nil
+      if (file.exists) file :: Nil else Nil
     }
   }
   

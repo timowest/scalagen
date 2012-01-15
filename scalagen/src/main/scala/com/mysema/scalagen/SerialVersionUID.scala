@@ -40,15 +40,14 @@ class SerialVersionUID extends UnitTransformerBase {
        .getOrElse(null)
        
     if (varAndField != null) {
-      varAndField._2.getVariables.remove(varAndField._1)
+      //varAndField._2.getVariables.remove(varAndField._1)
+      varAndField._2.setVariables(varAndField._2.getVariables - varAndField._1)
       if (varAndField._2.getVariables.isEmpty) {
-        n.getMembers.remove(varAndField._2)
-      }
-      if (n.getAnnotations == null) {
-        n.setAnnotations(new ArrayList[Annotation]())
+        //n.getMembers.remove(varAndField._2)
+        n.setMembers( n.getMembers - varAndField._2 )
       }
       val value = varAndField._1.getInit
-      n.getAnnotations.add(new SingleMemberAnnotation("SerialVersionUID", value))
+      n.setAnnotations(new SingleMemberAnnotation("SerialVersionUID", value) :: n.getAnnotations)
     }
     n
   }

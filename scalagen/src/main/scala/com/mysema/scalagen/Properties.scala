@@ -49,10 +49,12 @@ class Properties extends UnitTransformerBase {
       var getter = getters(name)
       val body = getter.getBody
       if (isReturnFieldStmt(body(0))) {
-        t.getMembers.remove(getter)
+        //t.getMembers.remove(getter)
+        t.setMembers(t.getMembers - getter)
         field.setModifiers(getter.getModifiers)
       } else if (isLazyCreation(body,name)) {
-        t.getMembers.remove(getter)
+        //t.getMembers.remove(getter)
+        t.setMembers(t.getMembers - getter)
         // TODO : extract via match
         val init = body(0).asInstanceOf[If]
           .getThenStmt.asInstanceOf[Block]

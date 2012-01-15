@@ -34,11 +34,11 @@ package object scalagen {
   
   implicit def toJavaSet[T](col: Set[T]): JavaSet[T] = JavaConversions.setAsJavaSet(col)
       
-  implicit def toScalaSeq[T](col: JavaList[T]): Seq[T] = {
-    if (col != null) JavaConversions.asScalaBuffer(col) else Nil 
-  }
+//  implicit def toScalaSeq[T](col: JavaList[T]): Seq[T] = {
+//    if (col != null) JavaConversions.asScalaBuffer(col) else Nil 
+//  }
   
-  def toScalaList[T](col: JavaList[T]): List[T] = {
+  implicit def toScalaList[T](col: JavaList[T]): List[T] = {
     if (col != null) JavaConversions.asScalaBuffer(col).toList else Nil 
   }
   

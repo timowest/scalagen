@@ -36,7 +36,7 @@ class ControlStatements extends UnitTransformerBase {
     val n = super.visit(nn, arg).asInstanceOf[For]    
     n match {
       case For((init: VariableDeclaration) :: Nil, l lt r, incr(_) :: Nil, _) => {
-        val until = new MethodCall(init.getVars.get(0).getInit, "until", r.asList)
+        val until = new MethodCall(init.getVars.get(0).getInit, "until", r :: Nil)
         init.getVars.get(0).setInit(null)
         new Foreach(init, until, n.getBody)
       }
@@ -63,7 +63,8 @@ class ControlStatements extends UnitTransformerBase {
     val n = super.visit(nn, arg).asInstanceOf[SwitchEntry]
     val size = if (n.getStmts == null) 0 else n.getStmts.size
     if (size > 1 && n.getStmts.get(size-1).isInstanceOf[Break]) {
-      n.getStmts.remove(size-1)
+      //n.getStmts.remove(size-1)
+      n.setStmts(n.getStmts.dropRight(1))
     }
     n
   }

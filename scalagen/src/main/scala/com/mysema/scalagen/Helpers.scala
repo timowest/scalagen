@@ -22,7 +22,7 @@ import _root_.scala.collection.Set
  * Common helper methods for transformers and ScalaDumpVisitor
  */
 trait Helpers {
-  import UnitTransformer._
+  import Types._
   
   val PROPERTY = 0x00001000
   val LAZY     = 0x00002000
@@ -54,32 +54,26 @@ trait Helpers {
   
   implicit def toRichBlock(b: Block) = new RichBlockStmt(b)
   
-  class RichBlockStmt(b: Block) {
-    def add(s: Statement) = b.getStmts.add(s)
+  class RichBlockStmt(b: Block) {    
     def apply(i: Int) = b.getStmts.get(i)
     def isEmpty = b.getStmts == null || b.getStmts.isEmpty
-    def remove(s: Statement) = b.getStmts.remove(s)
-    def removeAll(s: java.util.Collection[Statement]) = b.getStmts.removeAll(s)
+    def add(s: Statement) {
+      b.setStmts(b.getStmts :+ s)
+    }
+    def addAll(s: List[Statement]) {
+      b.setStmts(b.getStmts ++ s)
+    }
+    def remove(s: Statement) {
+      b.setStmts(b.getStmts - s)
+    }
+    def removeAll(s: List[Statement]) {
+      b.setStmts(b.getStmts -- s)
+    }
     def size = if (b.getStmts != null) b.getStmts.size else 0
   }  
   
-  implicit def toListBuilder[T <: Node](v: T) = new ListBuilder[T](v)
-  
-  class ListBuilder[T <: Node](v: T) {
-    def asList: JavaList[T] = {
-      val list = new java.util.ArrayList[T]()
-      list.add(v)
-      list
-    }
-  }  
-   
   //@inline
   def isEmpty(col: JavaCollection[_]): Boolean = col == null || col.isEmpty
-    
-  def extract(stmt: Statement): Statement = stmt match {
-    case b: Block => if (b.size == 1) b(0) else b
-    case _ => stmt
-  } 
   
   def getAssignment(s: Statement): Assign = s match {
     case Stmt(a: Assign) => a

@@ -38,7 +38,7 @@ class Enums extends UnitTransformerBase {
   override def visit(n: EnumDecl, arg: CompilationUnit) = {
     // transform enums into Scala Enumerations
     val clazz = new ClassOrInterfaceDecl()
-    clazz.setExtends(enumerationType.asList)
+    clazz.setExtends(enumerationType :: Nil)
     clazz.setName(n.getName)
     clazz.setModifiers(OBJECT)
     clazz.setMembers(createMembers(n))
@@ -47,10 +47,9 @@ class Enums extends UnitTransformerBase {
   
   private def createMembers(n: EnumDecl): JavaList[BodyDecl] = {
     val typeDecl = new ClassOrInterfaceDecl(0, false, n.getName)
-    typeDecl.setExtends(valType.asList)
+    typeDecl.setExtends(valType :: Nil)
     typeDecl.setImplements(n.getImplements)
-    typeDecl.setMembers(new ArrayList[BodyDecl])
-    typeDecl.getMembers.addAll(n.getMembers.filterNot(isStatic))
+    typeDecl.setMembers(n.getMembers.filterNot(isStatic))
     
     // entries
     val ty = new ClassOrInterface(n.getName)
@@ -61,14 +60,16 @@ class Enums extends UnitTransformerBase {
     // conversion function
     val conversion = new Method(IMPLICIT, ty, "convertValue")
     conversion.setBody(new Return(new Cast(ty, "v")))
-    conversion.setParameters(new Parameter(valueType, "v").asList)
+    conversion.setParameters(new Parameter(valueType, "v") :: Nil)
           
-    val members = new ArrayList[BodyDecl]()
-    members.addAll(entries)
-    members.add(typeDecl)       
-    members.addAll(n.getMembers.filter(isStatic))
-    members.add(conversion)
-    members
+//    val members = new ArrayList[BodyDecl]()
+//    members.addAll(entries)
+//    members.add(typeDecl)       
+//    members.addAll(n.getMembers.filter(isStatic))
+//    members.add(conversion)
+//    members
+    
+    entries ::: typeDecl :: n.getMembers.filter(isStatic) ::: conversion :: Nil
   }
     
 }  
