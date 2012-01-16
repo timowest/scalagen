@@ -173,6 +173,12 @@ class SerializationTest extends AbstractParserTest {
   }
   
   @Test
+  def Protected {
+    val sources = toScala[Protected]
+    assertContains(sources, "class Protected protected ()")
+  }
+  
+  @Test
   def Reserved {
     val sources = toScala[Reserved]
     assertContains(sources, "`object`","`type`","`var`","`val`")

@@ -817,7 +817,7 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
       printJavadoc(n.getJavaDoc, arg)  
     }    
     printMemberAnnotations(n.getAnnotations, arg)
-    if (first && n.getModifiers.isPrivate) {
+    if (first && (n.getModifiers.isPrivate || n.getModifiers.isProtected)) {
       printer.print(" ")
     }
     printModifiers(n.getModifiers)
