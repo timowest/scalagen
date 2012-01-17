@@ -11,6 +11,8 @@ public class Bean {
     private int age;
     
     private String firstName, lastName, userName;
+    
+    private boolean male;
 
     public int getAge() {
         return age;
@@ -43,6 +45,13 @@ public class Bean {
     public void setUserName(String userName) {
         this.userName = userName;
     }
-    
-    
+
+    public boolean isMale() {
+        return male;
+    }
+
+    public void setMale(boolean male) {
+        this.male = male;
+    }
+        
 }

@@ -78,17 +78,17 @@ class BeanProperties extends UnitTransformerBase {
   }
   
   private def isBeanGetter(method: Method): Boolean = method match {
-    case Method(getter, t, Nil, Return(field(_))) => true
+    case Method(getter(_*), t, Nil, Return(field(_))) => true
     case _ => false
   }
   
   private def isBooleanBeanGetter(method: Method): Boolean = method match {
-    case Method(booleanGetter, Type.Boolean, Nil, Return(field(_))) => true
+    case Method(booleanGetter(_*), Type.Boolean, Nil, Return(field(_))) => true
     case _ => false
   }
   
   private def isBeanSetter(method: Method): Boolean = method match {
-    case Method(setter, Type.Void, _ :: Nil, Stmt(_ set _)) => true
+    case Method(setter(_*), Type.Void, _ :: Nil, Stmt(_ set _)) => true
     case _ => false
   }
   

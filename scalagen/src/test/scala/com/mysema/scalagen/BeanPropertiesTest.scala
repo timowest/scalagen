@@ -27,9 +27,9 @@ class BeanPropertiesTest extends AbstractParserTest {
   @Test
   def Methods_Are_Removed1() {
     var unit = getCompilationUnit(classOf[Bean])
-    assertEquals(11, unit.getTypes.get(0).getMembers.size)    
+    assertEquals(14, unit.getTypes.get(0).getMembers.size)    
     unit = BeanProperties.transform(unit)
-    assertEquals(3, unit.getTypes.get(0).getMembers.size)
+    assertEquals(4, unit.getTypes.get(0).getMembers.size)
 //    for (member <- unit.getTypes.get(1).getMembers) {
 //      assertEquals(classOf[FieldDeclaration], member.getClass)
 //    }
