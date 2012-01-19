@@ -36,13 +36,25 @@ trait Types {
   } 
     
   private def safeToString(obj: AnyRef): String = if (obj != null) obj.toString else null
-      
+  
+  private def handle(o: BinaryExpr.Operator, b: BinaryExpr) = {
+    if (b.getOperator == o) Some(b.getLeft, b.getRight) else None 
+  }
+    
+  object and {
+    def unapply(b: Binary) = handle(Binary.and, b)    
+  }
+  
+  object or {
+    def unapply(b: Binary) = handle(Binary.or, b)    
+  } 
+  
   object set {
     def unapply(a: Assign) = if (a.getOperator == Assign.assign) Some(a.getTarget, a.getValue) else None
   }
     
   object === {
-    def unapply(b: Binary) = if (b.getOperator == Binary.equals) Some(b.getLeft, b.getRight) else None 
+    def unapply(b: Binary) = handle(Binary.equals, b) 
   }
   
   object incr {
@@ -50,7 +62,7 @@ trait Types {
   }
   
   object lt {
-    def unapply(b: Binary) = if (b.getOperator == Binary.less) Some(b.getLeft, b.getRight) else None
+    def unapply(b: Binary) = handle(Binary.less, b)
   }
     
   object field {
@@ -80,7 +92,7 @@ trait Types {
     val notEquals = BinaryExpr.Operator.notEquals
     val less = BinaryExpr.Operator.less
     val greater = BinaryExpr.Operator.greater
-    def unapply(b: Binary) = Some(b.getOperator, b.getLeft, b.getRight)
+    def unapply(b: Binary) = Some(b.getOperator, b.getLeft, b.getRight)    
   }
     
   object Block {

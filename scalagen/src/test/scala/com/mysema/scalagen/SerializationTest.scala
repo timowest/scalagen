@@ -185,6 +185,12 @@ class SerializationTest extends AbstractParserTest {
   }
   
   @Test
+  def Resource {
+    val sources = toScala[Resource]
+    assertContains(sources, "case o: Resource => o.path == path")
+  }
+  
+  @Test
   def Returns {
     val sources = toScala[Returns]
     assertContains(sources,

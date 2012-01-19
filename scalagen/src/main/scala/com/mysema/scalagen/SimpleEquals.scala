@@ -80,6 +80,7 @@ class SimpleEquals extends UnitTransformerBase {
           case If(_ === This(_), Return(Literal(true)), 
                If(InstanceOf(_,t), action, Return(Literal(false)))) => createSwitch(name,t, action)
           case If(InstanceOf(_,t), action, Return(Literal(false)))  => createSwitch(name,t, action)
+          case Return(InstanceOf(_,t) and cond) => createSwitch(name, t, new Return(cond))
           case _ => null
         }
         if (converted != null) {
