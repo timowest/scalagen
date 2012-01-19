@@ -17,7 +17,7 @@ import japa.parser.ast.`type`.Type
 import japa.parser.ast.`type`.VoidType
 import japa.parser.ast.`type`.WildcardType
 import japa.parser.ast.visitor.GenericVisitor
-import java.util.Collections
+import java.util.{ArrayList, Collections}
 
 /**
  * 
@@ -34,7 +34,15 @@ abstract class ModifierVisitor[A] extends GenericVisitor[Node, A] {
     } else if (list.isEmpty) {
        Collections.emptyList[T]() 
     } else {
-      list.map(_.accept(this, arg).asInstanceOf[T]).filter(_ != null)  
+      // XXX this has too high overhead since it is twice converted (from and to java.util.List)
+      //list.map(_.accept(this, arg).asInstanceOf[T]).filter(_ != null)
+      val rv = new ArrayList[T](list.size)
+      val it = list.iterator()
+      while (it.hasNext) {
+        val node = it.next().accept(this, arg).asInstanceOf[T]
+        if (node != null) rv.add(node)
+      }
+      rv
     }    
   }
   
