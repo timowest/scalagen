@@ -29,6 +29,7 @@ object ConvertProjects extends AbstractParserTest {
   def main(args: Array[String]) {
     val start = System.currentTimeMillis()
     Converter.instance.convert(new File("../../../querydsl"), new File("target/querydsl"))
+    Converter.instance.convert(new File("../../../rdfbean"), new File("target/rdfbean"))
     Converter.instance.convert(new File("../../codegen"), new File("target/codegen"))
     Converter.instance.convert(new File("../../webmin"), new File("target/webmin"))
     val duration = System.currentTimeMillis() - start

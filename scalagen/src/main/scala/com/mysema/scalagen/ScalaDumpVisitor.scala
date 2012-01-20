@@ -1198,12 +1198,20 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
       Types.extract(body) match {
         case fe: ForeachStmt => {
           printer.print("; ")
+          if (printer.lineLength > NL_THRESHOLD) {
+            printer.printLn()
+            printer.print("     ")
+          }
           fe.getVariable.getVars.get(0).accept(this, arg)
           printer.print(" <- ")
           fe.getIterable.accept(this, arg)
           body = fe.getBody
         }
         case ifStmt: IfStmt => {
+          if (printer.lineLength > NL_THRESHOLD) {
+            printer.printLn()
+            printer.print("   ")
+          }
           printer.print(" if ")
           ifStmt.getCondition.accept(this, arg)
           body = ifStmt.getThenStmt
