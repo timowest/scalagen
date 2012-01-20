@@ -1030,7 +1030,9 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
   def visit(n: SwitchEntryStmt, arg: Context) {
     if (arg.skip) {
       printer.print(" | ")
-      n.getLabel.accept(this, arg)
+      if (n.getLabel != null) {
+        n.getLabel.accept(this, arg)  
+      }      
     } else {
       printer.print("case ")
       if (n.getLabel != null) {        

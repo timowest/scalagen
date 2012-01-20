@@ -159,6 +159,12 @@ class SerializationTest extends AbstractParserTest {
   }
   
   @Test
+  def LazyInitBeanAccessor {
+    val sources = toScala[LazyInitBeanAccessor]
+    assertContains(sources, "lazy val value = \"XXX\"")
+  }
+  
+  @Test
   def Modifiers {
     val sources = toScala[Modifiers]
     assertContains(sources, 

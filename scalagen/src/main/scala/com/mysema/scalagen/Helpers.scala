@@ -79,6 +79,21 @@ trait Helpers {
     case Stmt(a: Assign) => a
     case _ => null
   }
+  
+  def getLazyInit(block: Block) = {
+    block.getStmts.get(0).asInstanceOf[If]
+      .getThenStmt.asInstanceOf[Block]
+      .getStmts().get(0).asInstanceOf[ExpressionStmt]
+      .getExpression.asInstanceOf[Assign]
+      .getValue
+  }
+    
+  def isLazyCreation(block: Block, f: String): Boolean = block match {
+    case Block(
+        If(isnull(field(`f`)), Stmt(field(`f`) set init), null) :: 
+        Return(field(`f`)) :: Nil) => true
+    case _ => false   
+  }
         
   def isAssignment(s: Statement): Boolean = s match {
     case Stmt(_ set _) => true

@@ -43,24 +43,23 @@ class BeanProperties extends UnitTransformerBase {
     // accessors
     val methods = t.getMembers.collect { case m: Method => m }
     val getters = methods.filter(m => isBeanGetter(m) || isBooleanBeanGetter(m))
-      .map(m => (BeanUtils.uncapitalize(m.getName.substring(if (isBeanGetter(m)) 3 else 2)),m)).toMap      
+      .map(m => (getProperty(m) ,m)).toMap      
     val setters = methods.filter(m => isBeanSetter(m))
-      .map(m => (BeanUtils.uncapitalize(m.getName.substring(3)), m)).toMap
+      .map(m => (getProperty(m), m)).toMap
    
     // fields with accessors
     val fields = t.getMembers.collect { case f: Field => f }
       .filter(_.getModifiers.isPrivate)
-      .flatMap( f => f.getVariables.map( v => (v.getId.getName,f) ))
-      .filter { case (field,_) =>  getters.contains(field) }
-      .toMap
+      .flatMap( f => f.getVariables.map( v => (v.getId.getName,v,f) ))
+      .filter { case (name,_,_) =>  getters.contains(name) }
           
     // remove accessors 
-    for ( (name,field) <- fields) {
+    for ( (name, variable, field) <- fields) {
       var getter = getters(name)
       //t.getMembers.remove(getter)
       t.setMembers(t.getMembers - getter)
       setters.get(name).foreach { s => t.setMembers(t.getMembers - s) }
-
+      
       // make field public
       val isFinal = field.getModifiers.isFinal
       field.setModifiers(getter.getModifiers
@@ -68,6 +67,15 @@ class BeanProperties extends UnitTransformerBase {
       if (field.getAnnotations == null || !field.getAnnotations.contains(BEAN_PROPERTY)) {
         field.setAnnotations(field.getAnnotations :+ BEAN_PROPERTY)
       }      
+      
+      // handle lazy init
+      if (isLazyCreation(getter.getBody, name)) {
+        variable.setInit(getLazyInit(getter.getBody))
+        field.setModifiers(field.getModifiers.addModifier(LAZY))
+        if (!setters.contains(name)) {
+          field.setModifiers(field.getModifiers.addModifier(ModifierSet.FINAL))
+        }
+      }
     }
     
     // add BeanProperty import, if properties have been found
@@ -79,17 +87,33 @@ class BeanProperties extends UnitTransformerBase {
   
   private def isBeanGetter(method: Method): Boolean = method match {
     case Method(getter(_*), t, Nil, Return(field(_))) => true
+    case Method(getter(_*), t, Nil, b: Block) => isLazyCreation(b, getProperty(method))
     case _ => false
   }
   
   private def isBooleanBeanGetter(method: Method): Boolean = method match {
     case Method(booleanGetter(_*), Type.Boolean, Nil, Return(field(_))) => true
+    case Method(booleanGetter(_*), Type.Boolean, Nil, b: Block) => isLazyCreation(b, getProperty(method))
     case _ => false
   }
-  
+      
   private def isBeanSetter(method: Method): Boolean = method match {
     case Method(setter(_*), Type.Void, _ :: Nil, Stmt(_ set _)) => true
     case _ => false
+  }
+  
+  private def getProperty(method: Method) = {
+    val name = method.getName
+    BeanUtils.uncapitalize(name.substring(if (name.startsWith("is")) 2 else 3))
+  }
+    
+  // TODO : to common place
+  private def isLazyCreation(block: Block, f: String): Boolean = block match {
+    // if (uncreated) { create } return
+    case Block(
+        If(isnull(field(`f`)), Stmt(field(`f`) set init), null) :: 
+        Return(field(`f`)) :: Nil) => true
+    case _ => false   
   }
   
 }

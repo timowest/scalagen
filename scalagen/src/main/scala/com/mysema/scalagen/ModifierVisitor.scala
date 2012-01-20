@@ -34,7 +34,6 @@ abstract class ModifierVisitor[A] extends GenericVisitor[Node, A] {
     } else if (list.isEmpty) {
        Collections.emptyList[T]() 
     } else {
-      // XXX this has too high overhead since it is twice converted (from and to java.util.List)
       //list.map(_.accept(this, arg).asInstanceOf[T]).filter(_ != null)
       val rv = new ArrayList[T](list.size)
       val it = list.iterator()

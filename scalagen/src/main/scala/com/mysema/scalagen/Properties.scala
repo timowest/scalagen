@@ -45,7 +45,7 @@ class Properties extends UnitTransformerBase {
       .filter { case (name,_,_) =>  getters.contains(name) }
           
     // remove accessors 
-    for ( (name,variable,field) <- fields) {
+    for ( (name, variable, field) <- fields) {
       var getter = getters(name)
       val body = getter.getBody
       if (isReturnFieldStmt(body(0))) {
@@ -55,26 +55,12 @@ class Properties extends UnitTransformerBase {
       } else if (isLazyCreation(body,name)) {
         //t.getMembers.remove(getter)
         t.setMembers(t.getMembers - getter)
-        // TODO : extract via match
-        val init = body(0).asInstanceOf[If]
-          .getThenStmt.asInstanceOf[Block]
-          .getStmts().get(0).asInstanceOf[ExpressionStmt]
-          .getExpression.asInstanceOf[Assign]
-          .getValue        
-        variable.setInit(init)
+        variable.setInit(getLazyInit(body))
         field.setModifiers(getter.getModifiers
           .addModifier(LAZY).addModifier(ModifierSet.FINAL))
       }            
     }    
     t
-  }
-    
-  private def isLazyCreation(block: Block, f: String): Boolean = block match {
-    // if (uncreated) { create } return
-    case Block(
-        If(isnull(field(`f`)), Stmt(field(`f`) set init), null) :: 
-        Return(field(`f`)) :: Nil) => true
-    case _ => false   
   }
   
   private def isGetter(method: Method): Boolean = method match {

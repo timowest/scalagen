@@ -95,14 +95,15 @@ class Constructors extends UnitTransformerBase {
         if (variables.contains(namedTarget.getName)) {
           if (assign.getValue.isInstanceOf[Name]) { // field = parameter
             val namedValue = assign.getValue.asInstanceOf[Name]
-            val param = c.getParameters.find(_.getId.getName == namedValue.getName).get
-            val field = variableToField(namedTarget.getName)
-            // rename parameter to field name
-            param.setId(namedTarget.getName)
-            copyAnnotationsAndModifiers(field, param)
-            // remove field
-            //field.getVariables.remove(variables(namedTarget.getName))
-            field.setVariables(field.getVariables - variables(namedTarget.getName))
+            c.getParameters.find(_.getId.getName == namedValue.getName).foreach { param =>
+              val field = variableToField(namedTarget.getName)
+              // rename parameter to field name
+              param.setId(namedTarget.getName)
+              copyAnnotationsAndModifiers(field, param)
+              // remove field
+              //field.getVariables.remove(variables(namedTarget.getName))
+              field.setVariables(field.getVariables - variables(namedTarget.getName))  
+            }            
           } else { // field = ?!?
             variables(namedTarget.getName).setInit(assign.getValue)              
           }          
