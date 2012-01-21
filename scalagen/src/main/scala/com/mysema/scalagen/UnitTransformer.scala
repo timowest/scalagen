@@ -36,9 +36,13 @@ object UnitTransformer extends Helpers with Types {
   
   private def safeToString(obj: AnyRef): String = if (obj != null) obj.toString else null
             
-  val BEAN_PROPERTY_IMPORT = new Import("scala.reflect.BeanProperty", false, false)
+  val BEAN_PROPERTY_IMPORT = new Import("scala.reflect.{BeanProperty, BooleanBeanProperty}", false, false)
 
+  //val BOOLEAN_BEAN_PROPERTY_IMPORT = new Import("scala.reflect.BooleanBeanProperty", false, false)
+  
   val BEAN_PROPERTY = new MarkerAnnotation("BeanProperty")
+  
+  val BOOLEAN_BEAN_PROPERTY = new MarkerAnnotation("BooleanBeanProperty")
       
   abstract class UnitTransformerBase extends ModifierVisitor[CompilationUnit] with UnitTransformer {
         
