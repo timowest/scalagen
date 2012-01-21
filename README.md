@@ -5,7 +5,7 @@ Add the following snippet to your Maven config to use Scalagen
     <plugin>
       <groupId>com.mysema.scalagen</groupId>
       <artifactId>scalagen-maven-plugin</artifactId>
-      <version>0.1.1</version>
+      <version>0.1.2</version>
     </plugin>
     
 To convert main sources run
