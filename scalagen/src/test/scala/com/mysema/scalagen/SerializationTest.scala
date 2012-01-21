@@ -76,6 +76,14 @@ class SerializationTest extends AbstractParserTest {
   }
   
   @Test
+  def BeanWithUnderscores {
+    val sources = toScala[BeanWithUnderscores]
+    assertContains(sources, 
+        "var firstName: String = _", 
+        "override def toString(): String = firstName + \" \" + this.lastName")
+  }
+  
+  @Test
   def Casts {
     val sources = toScala[Casts]
     assertContains(sources, "args.length.toDouble")

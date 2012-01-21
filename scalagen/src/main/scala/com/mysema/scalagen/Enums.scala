@@ -55,7 +55,7 @@ class Enums extends UnitTransformerBase {
     val ty = new ClassOrInterface(n.getName)
     val entries = n.getEntries.map(e => {
       val init = new ObjectCreation(null, ty, e.getArgs)
-      new Field(ModifierSet.FINAL, ty, new VariableDeclarator(e.getName, init)) })
+      new Field(ModifierSet.FINAL, ty, new Variable(e.getName, init)) })
         
     // conversion function
     val conversion = new Method(IMPLICIT, ty, "convertValue")

@@ -305,7 +305,7 @@ trait Types {
   
   type VariableDeclaration = VariableDeclarationExpr
   
-  type VariableDeclarator = japa.parser.ast.body.VariableDeclarator
+  //type VariableDeclarator = japa.parser.ast.body.VariableDeclarator
   
   type VariableDeclaratorId = japa.parser.ast.body.VariableDeclaratorId
 

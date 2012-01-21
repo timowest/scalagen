@@ -106,14 +106,5 @@ class BeanProperties extends UnitTransformerBase {
     val name = method.getName
     BeanUtils.uncapitalize(name.substring(if (name.startsWith("is")) 2 else 3))
   }
-    
-  // TODO : to common place
-  private def isLazyCreation(block: Block, f: String): Boolean = block match {
-    // if (uncreated) { create } return
-    case Block(
-        If(isnull(field(`f`)), Stmt(field(`f`) set init), null) :: 
-        Return(field(`f`)) :: Nil) => true
-    case _ => false   
-  }
   
 }

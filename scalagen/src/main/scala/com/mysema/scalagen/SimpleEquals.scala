@@ -77,7 +77,7 @@ class SimpleEquals extends UnitTransformerBase {
       case Method("equals", Type.Boolean, Parameter(name) :: Nil, stmt) => {
         val converted = stmt match {
           // skip obj == this check
-          case If(_ === This(_), Return(Literal(true)), 
+          case If(_ === This(_) | This(_) === _, Return(Literal(true)), 
                If(InstanceOf(_,t), action, Return(Literal(false)))) => createSwitch(name,t, action)
           case If(InstanceOf(_,t), action, Return(Literal(false)))  => createSwitch(name,t, action)
           case Return(InstanceOf(_,t) and cond) => createSwitch(name, t, new Return(cond))
