@@ -71,7 +71,7 @@ trait Helpers {
     }
     def size = if (b.getStmts != null) b.getStmts.size else 0
   }  
-  
+    
   //@inline
   def isEmpty(col: JavaCollection[_]): Boolean = col == null || col.isEmpty
   
@@ -138,5 +138,6 @@ trait Helpers {
     case Method("toString", Type.String, Nil, _) => true
     case _ => false
   }  
+  
       
 }

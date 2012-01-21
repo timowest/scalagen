@@ -20,9 +20,9 @@ import UnitTransformer._
 object Underscores extends Underscores
 
 /**
- * Underscores strips off underscore prefixes from field names
+ * Underscores strips off underscore prefixes from field names with related Bean properties
  */
-class Underscores extends UnitTransformerBase {
+class Underscores extends UnitTransformerBase with BeanHelpers {
     
   private val nameReplacer = new ModifierVisitor[Set[String]] {
     
@@ -36,10 +36,16 @@ class Underscores extends UnitTransformerBase {
   }  
   
   override def visit(n: ClassOrInterfaceDecl, cu: CompilationUnit): Node = {
+    val getters = n.getMembers.collect { case m: Method => m }
+      .filter(m => isBeanGetter(m) || isBooleanBeanGetter(m))
+      .map(getProperty)      
+    
     val variables = n.getMembers.collect { case f: Field => f }
       .flatMap( _.getVariables)
-      .filter(_.getId.getName.startsWith("_"))
-      .map(_.getId.getName).toSet
+      .map(_.getId.getName)
+      .filter(n => n.startsWith("_") && getters.contains(n.substring(1)))
+      .toSet
+      
     n.accept(nameReplacer, variables)
   }
   

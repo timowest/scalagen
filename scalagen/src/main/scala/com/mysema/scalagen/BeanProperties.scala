@@ -24,14 +24,8 @@ object BeanProperties extends BeanProperties
  * BeanProperties turns field + accessor combinations into @BeanPropert annotated 
  * Scala properties
  */
-class BeanProperties extends UnitTransformerBase {
-    
-  private val getter = "get\\w+".r
-  
-  private val setter = "set\\w+".r
-  
-  private val booleanGetter = "is\\w+".r
-  
+class BeanProperties extends UnitTransformerBase with BeanHelpers {
+     
   def transform(cu: CompilationUnit): CompilationUnit = {
     cu.accept(this, cu).asInstanceOf[CompilationUnit] 
   }  
@@ -85,27 +79,5 @@ class BeanProperties extends UnitTransformerBase {
     }
     t
   }
-  
-  private def isBeanGetter(method: Method): Boolean = method match {
-    case Method(getter(_*), t, Nil, Return(field(_))) => true
-    case Method(getter(_*), t, Nil, b: Block) => isLazyCreation(b, getProperty(method))
-    case _ => false
-  }
-  
-  private def isBooleanBeanGetter(method: Method): Boolean = method match {
-    case Method(booleanGetter(_*), Type.Boolean, Nil, Return(field(_))) => true
-    case Method(booleanGetter(_*), Type.Boolean, Nil, b: Block) => isLazyCreation(b, getProperty(method))
-    case _ => false
-  }
-      
-  private def isBeanSetter(method: Method): Boolean = method match {
-    case Method(setter(_*), Type.Void, _ :: Nil, Stmt(_ set _)) => true
-    case _ => false
-  }
-  
-  private def getProperty(method: Method) = {
-    val name = method.getName
-    BeanUtils.uncapitalize(name.substring(if (name.startsWith("is")) 2 else 3))
-  }
-  
+    
 }
