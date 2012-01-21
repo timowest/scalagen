@@ -20,37 +20,27 @@ import UnitTransformer._
 object Underscores extends Underscores
 
 /**
- * SerialVersionUID turns serialVersionUID fields into annotations
+ * Underscores strips off underscore prefixes from field names
  */
 class Underscores extends UnitTransformerBase {
+    
+  private val nameReplacer = new ModifierVisitor[Set[String]] {
+    
+    override def visitName(n: String, arg: Set[String]): String = {
+      if (arg.contains(n)) n.substring(1) else n
+    }  
+  }
   
   def transform(cu: CompilationUnit): CompilationUnit = {
     cu.accept(this, cu).asInstanceOf[CompilationUnit] 
   }  
   
-  // TODO : provide simpler variable name normalizations via UnitTransformerBase template methods
-  
-  override def visit(n: Variable, cu: CompilationUnit): Node = {         
-    val nn = super.visit(n, cu).asInstanceOf[Variable]
-    if (nn.getId.getName.startsWith("_")) {
-      nn.getId.setName(nn.getId.getName.substring(1))
-    }
-    nn
+  override def visit(n: ClassOrInterfaceDecl, cu: CompilationUnit): Node = {
+    val variables = n.getMembers.collect { case f: Field => f }
+      .flatMap( _.getVariables)
+      .filter(_.getId.getName.startsWith("_"))
+      .map(_.getId.getName).toSet
+    n.accept(nameReplacer, variables)
   }
   
-  override def visit(n: Name, cu: CompilationUnit): Node = {
-    if (n.getName.startsWith("_")) {
-      new Name(n.getName.substring(1))
-    } else {
-      n
-    }
-  }
-  
-  override def visit(n: FieldAccess, cu: CompilationUnit): Node = {
-    val nn = super.visit(n, cu).asInstanceOf[FieldAccess]
-    if (nn.getField.startsWith("_")) {
-      nn.setField(nn.getField.substring(1))
-    }
-    nn
-  }
 }

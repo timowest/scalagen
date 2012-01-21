@@ -45,6 +45,8 @@ abstract class ModifierVisitor[A] extends GenericVisitor[Node, A] {
     }    
   }
   
+  def visitName(name: String, arg: A) = name
+  
   def visit(n: AnnotationDeclaration, arg: A) : Node = {
     val rv = new AnnotationDeclaration()
     rv.setAnnotations(filter(n.getAnnotations, arg))
@@ -242,7 +244,7 @@ abstract class ModifierVisitor[A] extends GenericVisitor[Node, A] {
   }
 
   def visit(n: FieldAccessExpr, arg: A): Node = {
-    new FieldAccessExpr(filter(n.getScope, arg), n.getField)
+    new FieldAccessExpr(filter(n.getScope, arg), visitName(n.getField, arg))
   }
 
   def visit(n: FieldDeclaration, arg: A): Node = {
@@ -344,7 +346,7 @@ abstract class ModifierVisitor[A] extends GenericVisitor[Node, A] {
     rv
   }
 
-  def visit(n: NameExpr, arg: A): Node = new NameExpr(n.getName)
+  def visit(n: NameExpr, arg: A): Node = new NameExpr(visitName(n.getName, arg))
 
   def visit(n: NormalAnnotationExpr, arg: A): Node = {
     val rv = new NormalAnnotationExpr()
@@ -474,7 +476,7 @@ abstract class ModifierVisitor[A] extends GenericVisitor[Node, A] {
   def visit(n: VariableDeclaratorId, arg: A): Node = {
     val rv = new VariableDeclaratorId()
     rv.setArrayCount(n.getArrayCount)
-    rv.setName(n.getName)
+    rv.setName(visitName(n.getName, arg))
     rv
   }
 

@@ -40,7 +40,7 @@ class Primitives extends UnitTransformerBase {
   }
     
   override def visit(n: MethodCall, arg: CompilationUnit): Node = n match {
-    case Method(scope, "valueOf", a :: Nil) if primitives.contains(scope) => a.accept(this, arg)
+    case MethodCall(scope, "valueOf", a :: Nil) if primitives.contains(scope) => a.accept(this, arg)
     case _ => super.visit(n, arg)
   }
   

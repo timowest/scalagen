@@ -8,6 +8,8 @@ public class Control {
     
     List<Integer> integers = Arrays.asList(1,2,3,4,5);
     
+    int[] ints = {1,2,3,4,5};
+    
     public void whileLoop() {
         int i = 0;
         while (i < integers.size()) {
@@ -72,5 +74,23 @@ public class Control {
             }        
         }
     }  
+    
+    public int transform(int i) {
+        for (int j : ints) {
+            if (j == i) {
+                return j;
+            }
+        }
+        return -1;
+    }
+    
+    public int transform2(int i) {
+        for (int j : ints) {
+            if (j == i) {
+                return 2 * j;
+            }
+        }
+        return -1;
+    }
 
 }

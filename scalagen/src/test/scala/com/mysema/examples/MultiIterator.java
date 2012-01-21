@@ -33,7 +33,7 @@ import javax.annotation.Nullable;
 public class MultiIterator<T> implements Iterator<Object[]> {
 
     @Nullable
-    private Boolean _hasNext;
+    private Boolean __hasNext;
 
     private int index = 0;
 
@@ -57,19 +57,19 @@ public class MultiIterator<T> implements Iterator<Object[]> {
 
     @Override
     public boolean hasNext() {
-        while (_hasNext == null) {
+        while (__hasNext == null) {
             produceNext();
         }
-        return _hasNext.booleanValue();
+        return __hasNext.booleanValue();
     }
 
     @Override
     public Object[] next() {
-        while (_hasNext == null) {
+        while (__hasNext == null) {
             produceNext();
         }
-        if (_hasNext.booleanValue()) {
-            _hasNext = null;
+        if (__hasNext.booleanValue()) {
+            __hasNext = null;
             return values.clone();
         } else {
             throw new NoSuchElementException();
@@ -82,12 +82,12 @@ public class MultiIterator<T> implements Iterator<Object[]> {
                 iterators.set(i, iterables.get(i).iterator());
             }
             if (!iterators.get(i).hasNext()) {
-                _hasNext = i == 0 ? Boolean.FALSE : null;
+                __hasNext = i == 0 ? Boolean.FALSE : null;
                 return;
             }
             values[i] = iterators.get(i).next();
             lastEntry[i] = !iterators.get(i).hasNext();
-            _hasNext = Boolean.TRUE;
+            __hasNext = Boolean.TRUE;
         }
         index = iterables.size() - 1;
         while (lastEntry[index] && index > 0) {

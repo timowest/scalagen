@@ -136,6 +136,10 @@ trait Types {
     def unapply(f: For) = Some(toScalaList(f.getInit), f.getCompare, toScalaList(f.getUpdate), extract(f.getBody))
   }
   
+  object Foreach {
+    def unapply(f: Foreach) = Some(f.getVariable, f.getIterable, extract(f.getBody))
+  }
+  
   object If {
     def unapply(i: If) = Some(i.getCondition, extract(i.getThenStmt), extract(i.getElseStmt))
   }
@@ -155,7 +159,10 @@ trait Types {
   }
   
   object Method {
-    def unapply(m: Method) = Some(m.getName, m.getType, toScalaList(m.getParameters), extract(m.getBody))
+    def unapply(m: Method) = Some(m.getName, m.getType, toScalaList(m.getParameters), extract(m.getBody))    
+  }
+  
+  object MethodCall {
     def unapply(m: MethodCall) = Some(safeToString(m.getScope), m.getName, toScalaList(m.getArgs))
   }
   

@@ -107,7 +107,9 @@ class SerializationTest extends AbstractParserTest {
     assertContains(sources, 
         "for (i <- 0 until integers.size) {",
         "for (i <- integers) {",
-        "for (i <- integers if i > 0) {")
+        "for (i <- integers if i > 0) {",
+        "ints.find(_ == i).getOrElse(-1)",
+        "ints.find(_ == i).map(2 * _).getOrElse(-1)")
   }
   
   @Test
@@ -207,9 +209,8 @@ class SerializationTest extends AbstractParserTest {
   @Test
   def Returns {
     val sources = toScala[Returns]
-    assertContains(sources,
-      "for (i <- start until n if i / 5 > 1) return i",
-      "    -1")    
+    assertContains(sources,"(start until n).find(_ / 5 > 1).getOrElse(-1)")
+      //"for (i <- start until n if i / 5 > 1) return i",)    
   }
   
   @Test
