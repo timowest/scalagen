@@ -147,7 +147,8 @@ class SerializationTest extends AbstractParserTest {
   def Immutable {
     val sources = toScala[Immutable]
     assertContains(sources, 
-        "class Immutable(@BeanProperty val firstName: String, @BeanProperty val lastName: String)")
+        "class Immutable(@BeanProperty val firstName: String, @BeanProperty val lastName: String)",
+        "val immutable = new Immutable")
   }
   
   @Test

@@ -34,6 +34,8 @@ abstract class AbstractParserTest {
     unit
   }
   
+  def toScala(obj: AnyRef): String = toScala(getCompilationUnit(obj.getClass))
+  
   def toScala[T](implicit mf: Manifest[T]): String = toScala(getCompilationUnit(mf.erasure))
   
   def toScala(unit: CompilationUnit): String = Converter.instance.toScala(unit)
