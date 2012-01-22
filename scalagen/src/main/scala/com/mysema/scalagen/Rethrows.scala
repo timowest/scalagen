@@ -37,7 +37,7 @@ class Rethrows extends UnitTransformerBase {
   
   private def isPrinted(c: Catch): Boolean = {
     val block = c.getCatchBlock()
-    block.size > 1 || (block.size == 1 && !block(0).isInstanceOf[Throw])
+    block.isEmpty || block.size > 1 || (block.size == 1 && !block(0).isInstanceOf[Throw])
   }
     
 }
