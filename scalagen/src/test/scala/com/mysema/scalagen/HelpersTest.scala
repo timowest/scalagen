@@ -8,7 +8,7 @@ import java.util.Collections
 
 class HelpersTest {
   
-  object helpers extends Helpers
+  val helpers = new AnyRef with Helpers
   
   @Test
   def IsHashCode {

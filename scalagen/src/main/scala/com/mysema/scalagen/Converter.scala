@@ -25,7 +25,8 @@ object Converter {
    * default instance for Converter type
    */
   lazy val instance = new Converter("UTF-8",List[UnitTransformer](
-    Rethrows, 
+    Rethrows,
+    VarToVal,
     RemoveAsserts, 
     Annotations,
     Enums,

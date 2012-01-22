@@ -62,13 +62,6 @@ class Enums extends UnitTransformerBase {
     conversion.setBody(new Return(new Cast(ty, "v")))
     conversion.setParameters(new Parameter(valueType, "v") :: Nil)
           
-//    val members = new ArrayList[BodyDecl]()
-//    members.addAll(entries)
-//    members.add(typeDecl)       
-//    members.addAll(n.getMembers.filter(isStatic))
-//    members.add(conversion)
-//    members
-    
     entries ::: typeDecl :: n.getMembers.filter(isStatic) ::: conversion :: Nil
   }
     
