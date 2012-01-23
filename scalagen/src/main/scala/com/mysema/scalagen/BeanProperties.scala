@@ -56,8 +56,8 @@ class BeanProperties extends UnitTransformerBase with BeanHelpers {
       
       // make field public
       val isFinal = field.getModifiers.isFinal
-      field.setModifiers(getter.getModifiers
-          .addModifier(if (isFinal) ModifierSet.FINAL else 0));
+       field.setModifiers(getter.getModifiers
+          .addModifier(if (isFinal) ModifierSet.FINAL else 0))
       val annotation = if (getter.getName.startsWith("is")) BOOLEAN_BEAN_PROPERTY else BEAN_PROPERTY 
       if (field.getAnnotations == null || !field.getAnnotations.contains(annotation)) {
         field.setAnnotations(field.getAnnotations :+ annotation)
@@ -66,9 +66,9 @@ class BeanProperties extends UnitTransformerBase with BeanHelpers {
       // handle lazy init
       if (isLazyCreation(getter.getBody, name)) {
         variable.setInit(getLazyInit(getter.getBody))
-        field.setModifiers(field.getModifiers.addModifier(LAZY))
+        field.addModifier(LAZY)
         if (!setters.contains(name)) {
-          field.setModifiers(field.getModifiers.addModifier(ModifierSet.FINAL))
+          field.addModifier(ModifierSet.FINAL)
         }
       }
     }

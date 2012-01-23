@@ -195,6 +195,14 @@ trait Types {
   }
     
   object Unary {
+    val positive = UnaryExpr.Operator.positive
+    val negative = UnaryExpr.Operator.negative
+    val preIncrement = UnaryExpr.Operator.preIncrement
+    val preDecrement = UnaryExpr.Operator.posDecrement
+    val not = UnaryExpr.Operator.not
+    val inverse = UnaryExpr.Operator.inverse
+    val posIncrement = UnaryExpr.Operator.posIncrement
+    val posDecrement = UnaryExpr.Operator.posDecrement
     def unapply(u: Unary) = Some(u.getOperator, u.getExpr)
   }
   

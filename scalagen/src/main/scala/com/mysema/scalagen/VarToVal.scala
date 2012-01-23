@@ -30,6 +30,9 @@ object defs {
  */
 class VarToVal extends ModifierVisitor[Vars] with UnitTransformer {
   
+  private val operators = Set(Unary.posDecrement, Unary.posIncrement,
+      Unary.preDecrement, Unary.preIncrement)
+  
   def transform(cu: CompilationUnit): CompilationUnit = {
     cu.accept(this, Nil).asInstanceOf[CompilationUnit] 
   }  
@@ -43,8 +46,7 @@ class VarToVal extends ModifierVisitor[Vars] with UnitTransformer {
       .toMap
     
     // set vars to final
-    vars.values
-      .foreach { v => v.setModifiers(v.getModifiers.addModifier(ModifierSet.FINAL)) }
+    vars.values.foreach(_.addModifier(ModifierSet.FINAL))
     
     super.visit(n,  vars :: arg)
   }
@@ -55,7 +57,7 @@ class VarToVal extends ModifierVisitor[Vars] with UnitTransformer {
   }
   
   override def visit(n: Unary, arg: Vars): Node = {
-    if (n.getOperator.toString.endsWith("crement")) {
+    if (operators.contains(n.getOperator)) {
       removeFinal(n.getExpr.toString, arg) 
     } 
     n
@@ -67,7 +69,7 @@ class VarToVal extends ModifierVisitor[Vars] with UnitTransformer {
   private def removeFinal(key: String, arg: Vars) {
     arg.find(_.contains(key))        
       .flatMap(_.get(key))
-      .foreach { v => v.setModifiers(v.getModifiers().removeModifier(ModifierSet.FINAL))}    
+      .foreach(_.removeModifier(ModifierSet.FINAL))    
   }
   
 }

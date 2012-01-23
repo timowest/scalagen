@@ -52,6 +52,21 @@ trait Helpers {
     def removeModifier(mod: Int) = ModifierSet.removeModifier(i,mod)    
   }  
   
+  type WithModifiers = { def getModifiers(): Int ; def setModifiers(v: Int): Unit }
+  
+  implicit def toRichWithModifiers(wm: WithModifiers) = new RichWithModifiers(wm)
+  
+  class RichWithModifiers(wm: WithModifiers) {
+    def addModifier(mod: Int): RichWithModifiers = {
+      wm.setModifiers(ModifierSet.addModifier(wm.getModifiers, mod))
+      this
+    } 
+    def removeModifier(mod: Int): RichWithModifiers = {
+      wm.setModifiers(ModifierSet.removeModifier(wm.getModifiers, mod))
+      this
+    }
+  }
+  
   implicit def toRichBlock(b: Block) = new RichBlockStmt(b)
   
   class RichBlockStmt(b: Block) {    
