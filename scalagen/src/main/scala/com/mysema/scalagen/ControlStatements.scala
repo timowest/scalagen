@@ -24,11 +24,25 @@ object ControlStatements extends ControlStatements
  */
 class ControlStatements extends UnitTransformerBase {
   
-  private val toUnderscore = new ModifierVisitor[Set[String]] {
-    
+  private val KEY = new Name("key")
+  
+  private val VALUE = new Name("value")
+  
+  private val toUnderscore = new ModifierVisitor[Set[String]] {    
     override def visitName(n: String, arg: Set[String]): String = {
       if (arg.contains(n)) "_" else n
     }  
+  }
+  
+  private val toKeyAndValue = new ModifierVisitor[String] {
+    override def visit(nn: MethodCall, arg: String): Node = {
+      val n = super.visit(nn, arg).asInstanceOf[MethodCall]
+      n match {
+        case MethodCall(str(`arg`), "getKey", Nil) => KEY
+        case MethodCall(str(`arg`), "getValue", Nil) => VALUE
+        case _ => n
+      }
+    }    
   }
   
   def transform(cu: CompilationUnit): CompilationUnit = {
@@ -49,6 +63,35 @@ class ControlStatements extends UnitTransformerBase {
       }
       case _ => n
     }
+  }
+  
+  override def visit(nn: MethodCall, arg: CompilationUnit): Node = {
+    // transform
+    //   System.out.println
+    // into 
+    //   println
+    val n = super.visit(nn, arg).asInstanceOf[MethodCall]
+    n match {
+      case MethodCall(str("System.out"), "println", args) => {
+        new MethodCall(null, "println", args)
+      }
+      case _ => n
+    }
+  }
+  
+  override def visit(nn: Foreach, arg: CompilationUnit): Node = {
+    val n = super.visit(nn, arg).asInstanceOf[Foreach]
+    n match {
+      case Foreach(
+          VariableDeclaration(t, v :: Nil), 
+          MethodCall(scope, "entrySet", Nil), body) => {
+        val vid = v.getId.toString
+        new Foreach(
+            VariableDeclaration(0, "(key, value)", Type.Object), 
+            scope, n.getBody.accept(toKeyAndValue, vid).asInstanceOf[Block])            
+      }
+      case _ => n
+    }    
   }
   
   // TODO : maybe move this to own class

@@ -32,7 +32,7 @@ class RemoveAsserts extends UnitTransformerBase {
   // TODO : don't remove method calls when used as statements
   
   override def visit(n: MethodCall, arg: CompilationUnit) = n match {
-    case MethodCall("Assert", _, a :: rest) => a.accept(this, arg)
+    case MethodCall(str("Assert"), _, a :: rest) => a.accept(this, arg)
     case _ => super.visit(n, arg)
   }
     

@@ -43,11 +43,9 @@ class VarToVal extends ModifierVisitor[Vars] with UnitTransformer {
     }
     val vars = n.getStmts.collect { case Stmt(v: VariableDeclaration) => v }
       .flatMap(v => v.getVars.map(va => (va.getId.getName,v)))
-      .toMap
-    
+      .toMap    
     // set vars to final
-    vars.values.foreach(_.addModifier(ModifierSet.FINAL))
-    
+    vars.values.foreach(_.addModifier(ModifierSet.FINAL))    
     super.visit(n,  vars :: arg)
   }
   

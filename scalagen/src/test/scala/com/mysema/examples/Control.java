@@ -1,8 +1,10 @@
 package com.mysema.examples;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 public class Control {
     
@@ -91,6 +93,13 @@ public class Control {
             }
         }
         return -1;
+    }
+    
+    public void entrySetIterator() {
+        Map<String,String> entries = Collections.<String,String>emptyMap();
+        for (Map.Entry<String, String> entry : entries.entrySet()) {
+            System.out.println(entry.getKey()+ " " + entry.getValue());
+        }
     }
 
 }

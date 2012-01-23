@@ -109,7 +109,9 @@ class SerializationTest extends AbstractParserTest {
         "for (i <- integers) {",
         "for (i <- integers if i > 0) {",
         "ints.find(_ == i).getOrElse(-1)",
-        "ints.find(_ == i).map(2 * _).getOrElse(-1)")
+        "ints.find(_ == i).map(2 * _).getOrElse(-1)",
+        "for ((key, value) <- entries) {",
+        "println(key + \" \" + value)")
   }
   
   @Test
@@ -239,9 +241,9 @@ class SerializationTest extends AbstractParserTest {
   def SwitchCase {
     val sources = toScala[SwitchCase]
     assertContains(sources, 
-      "case 0 => System.out.println(0)", 
-      "case 1 => System.out.println(1)",
-      "case 0 | 1 => System.out.println(1)")
+      "case 0 => println(0)", 
+      "case 1 => println(1)",
+      "case 0 | 1 => println(1)")
   }
   
   @Test

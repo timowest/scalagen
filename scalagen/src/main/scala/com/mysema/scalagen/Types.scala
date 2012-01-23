@@ -35,12 +35,16 @@ trait Types {
     case _ => stmt
   } 
     
-  private def safeToString(obj: AnyRef): String = if (obj != null) obj.toString else null
+  //private def safeToString(obj: AnyRef): String = if (obj != null) obj.toString else null
   
   private def handle(o: BinaryExpr.Operator, b: BinaryExpr) = {
     if (b.getOperator == o) Some(b.getLeft, b.getRight) else None 
   }
     
+  object str {
+    def unapply(n: Node) = if (n != null) Some(n.toString) else None
+  }
+  
   object and {
     def unapply(b: Binary) = handle(Binary.and, b)    
   }
@@ -67,7 +71,7 @@ trait Types {
     
   object field {
     def unapply(f: Expression) = f match {
-      case Field(scope, field) if scope == "this" => Some(field)
+      case Field(str("this"), field) => Some(field)
       case Name(field) => Some(field)
       case _ => None
     }
@@ -129,7 +133,7 @@ trait Types {
   }
   
   object Field {
-    def unapply(f: FieldAccess) = Some(safeToString(f.getScope), f.getField)
+    def unapply(f: FieldAccess) = Some(f.getScope, f.getField)
   }
   
   object For {
@@ -163,7 +167,7 @@ trait Types {
   }
   
   object MethodCall {
-    def unapply(m: MethodCall) = Some(safeToString(m.getScope), m.getName, toScalaList(m.getArgs))
+    def unapply(m: MethodCall) = Some(m.getScope, m.getName, toScalaList(m.getArgs))
   }
   
   object Name {
