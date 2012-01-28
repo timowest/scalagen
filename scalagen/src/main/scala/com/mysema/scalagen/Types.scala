@@ -306,7 +306,9 @@ trait Types {
   
   type Switch = SwitchStmt
   
-  type SwitchEntry = SwitchEntryStmt  
+  type SwitchEntry = SwitchEntryStmt
+  
+  type SynchronizedStmt = japa.parser.ast.stmt.SynchronizedStmt
   
   type This = ThisExpr
   

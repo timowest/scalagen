@@ -27,6 +27,7 @@ object Converter {
   lazy val instance = new Converter("UTF-8",List[UnitTransformer](
     Rethrows,
     VarToVal,
+    Synchronized,
     RemoveAsserts, 
     Annotations,
     Enums,

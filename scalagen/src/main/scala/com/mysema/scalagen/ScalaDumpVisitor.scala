@@ -1277,9 +1277,13 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
   }
 
   def visit(n: SynchronizedStmt, arg: Context) {
-    printer.print("synchronized (")
-    n.getExpr.accept(this, arg)
-    printer.print(") ")
+    if (n.getExpr != null) {
+      printer.print("synchronized (")
+      n.getExpr.accept(this, arg)
+      printer.print(") ")  
+    } else {
+      printer.print("synchronized ")      
+    }    
     n.getBlock.accept(this, arg)
   }
 
