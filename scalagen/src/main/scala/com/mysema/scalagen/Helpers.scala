@@ -1,4 +1,3 @@
-
 /*
  * Copyright (C) 2011, Mysema Ltd
  *
@@ -95,6 +94,7 @@ trait Helpers {
     case _ => null
   }
   
+  // TODO use pattern matching
   def getLazyInit(block: Block) = {
     block.getStmts.get(0).asInstanceOf[If]
       .getThenStmt.asInstanceOf[Block]
