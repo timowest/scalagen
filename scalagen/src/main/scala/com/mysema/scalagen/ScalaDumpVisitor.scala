@@ -40,7 +40,7 @@ object ScalaDumpVisitor {
   private val PRIMITIVES = Map("Boolean"->"Boolean","Byte"->"Byte","Character"->"Char","Double"->"Double",
       "Float"->"Float","Integer"->"Int","Long"->"Long","Short"->"Short")
   
-  private val SHORT_FORM = Set("eq","equals","gt","hashCode","hasNext","keys","keySet","length","lt","ne",
+  private val SHORT_FORM = Set("asc","desc","eq","equals","gt","hashCode","hasNext","keys","keySet","length","lt","ne",
       "query","size","toString","until","values","!=")
   
   private val RESERVED = Set("def","match","object","type","val","var")
