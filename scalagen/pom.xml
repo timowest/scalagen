@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.mysema.scalagen</groupId>
   <artifactId>scalagen</artifactId>
-  <version>0.1.2</version>
+  <version>0.1.3</version>
   <name>Scalagen</name>  
   <parent>
     <groupId>com.mysema.home</groupId>

@@ -33,7 +33,7 @@ public class ScalagenMojo extends AbstractMojo {
     private MavenProject project;
 
     /**
-     * @parameter default-value="src/main/scala"
+     * @parameter default-value="src/main/scala" expression="${targetFolder}"
      */
     private String targetFolder;
     
