@@ -35,7 +35,8 @@ class ScalaCompilationTest extends AbstractParserTest with CompileTestUtils {
         assertCompileSuccess(source)
         null
       } catch {
-        case e: AssertionError => (f.getName, e.getMessage)  
+        case e: AssertionError => (f.getName, e.getMessage)
+        //case e: Exception => (f.getName, e.getMessage)  
       }
     }.toList.filter(_ != null).toMap
     
