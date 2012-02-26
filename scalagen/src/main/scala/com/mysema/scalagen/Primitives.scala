@@ -34,8 +34,8 @@ class Primitives extends UnitTransformerBase {
   }  
   
   override def visit(n: FieldAccess, arg: CompilationUnit): Node = n match {
-    case Field(str("Boolean"), "TRUE") => TRUE
-    case Field(str("Boolean"), "FALSE") => FALSE
+    case FieldAccess(str("Boolean"), "TRUE") => TRUE
+    case FieldAccess(str("Boolean"), "FALSE") => FALSE
     case _ => super.visit(n, arg)
   }
     

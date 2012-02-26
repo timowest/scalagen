@@ -71,7 +71,7 @@ trait Types {
     
   object field {
     def unapply(f: Expression) = f match {
-      case Field(str("this"), field) => Some(field)
+      case FieldAccess(str("this"), field) => Some(field)
       case Name(field) => Some(field)
       case _ => None
     }
@@ -132,7 +132,7 @@ trait Types {
     def unapply(e: Enclosed) = Some(e.getInner)
   }
   
-  object Field {
+  object FieldAccess {
     def unapply(f: FieldAccess) = Some(f.getScope, f.getField)
   }
   
