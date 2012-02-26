@@ -57,7 +57,7 @@ class Converter(encoding: String, transformers: List[UnitTransformer]) {
       
     // create out folders
     inToOut.foreach(_._2.getParentFile.mkdirs() )  
-    //JavaParser.setCacheParser(false)
+    JavaParser.setCacheParser(false)
     inToOut.foreach{ case (in,out) => convertFile(in,out) }
   }
   
