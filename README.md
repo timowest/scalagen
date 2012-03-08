@@ -8,6 +8,8 @@ https://github.com/mysema/scalagen/tree/master/scalagen/src/test/scala/com/mysem
 
 Scalagen has also been tested on our own projects such as Querydsl, RDFBean, Codegen and some customer projects.
 
+**Usage**
+
 You can use it directly via the command line like this
 
     mvn com.mysema.scalagen:scalagen-maven-plugin:0.1.3:main -DtargetFolder=target/scala
