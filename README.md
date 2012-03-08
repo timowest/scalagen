@@ -1,6 +1,6 @@
 **Scalagen - Java to Scala conversion**
 
-Scalagen provides direct Maven support via a plugin. It uses a Java based parser for Java sources and provides modular 
+Scalagen is a Java to Scala conversion tool. It uses a Java based parser for Java sources and provides modular 
 transformation of the AST to match Scala idioms. The resulting transformed AST is serialized into Scala format.
 
 Here is a list of example Java sources which have been successfully converted by Scalagen:
@@ -10,7 +10,7 @@ Scalagen has also been tested on our own projects such as Querydsl, RDFBean, Cod
 
 **Usage**
 
-You can use it directly via the command line like this
+Scalagen provides direct Maven support via a plugin. You can use it directly via the command line like this
 
     mvn com.mysema.scalagen:scalagen-maven-plugin:0.1.3:main -DtargetFolder=target/scala
     
