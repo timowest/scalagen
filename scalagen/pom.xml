@@ -179,6 +179,27 @@
           <argLine>-Xms256m -Xmx512m</argLine>
         </configuration>
       </plugin>      
+
+      <!-- Dependencies needed to run command line jar -->
+      <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-dependency-plugin</artifactId>
+          <executions>
+              <execution>
+                  <id>copy-dependencies</id>
+                  <phase>package</phase>
+                  <goals>
+                      <goal>copy-dependencies</goal>
+                  </goals>
+                  <configuration>
+                      <includeScope>runtime</includeScope>
+                      <overWriteIfNewer>true</overWriteIfNewer>
+                      <overWriteSnapshots>true</overWriteSnapshots>
+                      <outputDirectory>${basedir}/target/dependencies</outputDirectory>
+                  </configuration>
+              </execution>
+          </executions>
+      </plugin>
     </plugins>
   </build>
   
