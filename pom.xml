@@ -4,13 +4,13 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.mysema.scalagen</groupId>
   <artifactId>scalagen-root</artifactId>
-  <version>0.1.3</version>
+  <version>0.2.0</version>
   <name>Scalagen - parent</name>
 
   <parent>
     <groupId>com.mysema.home</groupId>
     <artifactId>mysema-source</artifactId>
-    <version>0.2.0</version>
+    <version>0.3.0</version>
   </parent>
 
   <packaging>pom</packaging>
