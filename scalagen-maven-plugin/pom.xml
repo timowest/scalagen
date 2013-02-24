@@ -10,7 +10,7 @@
 
   <groupId>com.mysema.scalagen</groupId>
   <artifactId>scalagen-maven-plugin</artifactId>
-  <version>0.2.0</version>
+  <version>0.2.1</version>
   <name>Scalagen - Maven plugin</name>
   <description>Scalagen Maven plugin</description>
   <packaging>maven-plugin</packaging>

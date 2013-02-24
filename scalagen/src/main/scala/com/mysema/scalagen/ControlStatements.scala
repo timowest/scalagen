@@ -88,7 +88,7 @@ class ControlStatements extends UnitTransformerBase {
         val vid = v.getId.toString
         new Foreach(
             VariableDeclaration(0, "(key, value)", Type.Object), 
-            scope, n.getBody.accept(toKeyAndValue, vid).asInstanceOf[Block])            
+            scope, n.getBody.accept(toKeyAndValue, vid).asInstanceOf[Statement])            
       }
       case _ => n
     }    
