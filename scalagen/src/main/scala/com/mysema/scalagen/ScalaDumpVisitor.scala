@@ -446,7 +446,7 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
       printer.print("]")
     }
   }
-
+  
   def visit(n: WildcardType, arg: Context) {
     printer.print("_")
     if (n.getExtends != null) {
@@ -536,23 +536,24 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
 
   def visit(n: ArrayCreationExpr, arg: Context) {    
     if (n.getDimensions != null) {
-      printer.print("new ")
       
       if (arg.assignType != null) {
+        printer.print("new ")
         arg.assignType.accept(this, arg) 
       } else {
-        val max = if (n.getDimensions != null) n.getArrayCount + 1 else n.getArrayCount        
+        val max = n.getArrayCount + 1
+        printer.print("Array.ofDim[")
         for (i <- 0 until max) {
-          printer.print("Array[")
+          val typeArg = arg.typeArg
+          arg.typeArg = true
+          n.getType.accept(this, arg)
+          arg.typeArg = typeArg
+          if (i > 0) {
+            printer.print(",")
+          }
         }
-        val typeArg = arg.typeArg
-        arg.typeArg = true
-        n.getType.accept(this, arg)
-        arg.typeArg = typeArg
-        for (i <- 0 until max) {
-          printer.print("]")
-        }
-      }       
+        printer.print("]")        
+      }      
       
       printer.print(n.getDimensions.map(print(_,arg)).mkString("(",", ",")"))
     } else {
@@ -939,11 +940,22 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
       }      
       if (v.getInit == null || v.getInit.isInstanceOf[NullLiteralExpr]){
         v.getId.accept(this, arg)
-        printer.print(": ")
+        printer.print(": ")        
+        for (i <- 0 until v.getId.getArrayCount) {
+          printer.print("Array[")
+        }
         n.getType.accept(this, arg)
+        for (i <- 0 until v.getId.getArrayCount) {
+          printer.print("]")
+        }
         if (!asParameter) {
           printer.print(" = ")
-          printer.print(if (v.getInit() == null) "_" else "null")  
+          if (n.getType.isInstanceOf[PrimitiveType]) {
+            printer.print("0")
+          } else {
+            printer.print("null")
+          }
+          //printer.print(if (v.getInit() == null) "_" else "null")  
         }        
       } else {
         v.accept(this, arg)

@@ -60,7 +60,7 @@ class SerializationTest extends AbstractParserTest {
   @Test
   def ArrayTests {
     val sources = toScala[ArrayTests]
-    assertContains(sources, "def foo(): Array[Int] = new Array[Int](2)")        
+    assertContains(sources, "def foo(): Array[Int] = Array.ofDim[Int](2)")        
   }
   
   @Test

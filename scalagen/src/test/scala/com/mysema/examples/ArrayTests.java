@@ -17,4 +17,16 @@ public class ArrayTests {
         String el1s[] = new String[]{"a","b"};
         String el2s[] = new String[]{"a","b","c"};
     }
+    
+    void bar3() {
+        final int SIZE = 3;
+        String strings1[];
+        strings1 = new String[SIZE];
+    }
+    
+    void bar4() {
+        final int SIZE = 3;
+        String[] strings2;
+        strings2 = new String[SIZE];
+    }
 }
