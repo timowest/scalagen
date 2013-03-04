@@ -46,6 +46,16 @@ object ScalaDumpVisitor {
   private val RESERVED = Set("def","match","object","type","val","var")
   
   private val JAVA_TYPES = Set("Iterable")
+    
+  private val DEFAULTS = Map(      
+      PrimitiveType.Primitive.Boolean -> "false",
+      PrimitiveType.Primitive.Byte -> "0",
+      PrimitiveType.Primitive.Char -> "0",
+      PrimitiveType.Primitive.Double -> "0.0",
+      PrimitiveType.Primitive.Float -> "0.0f",
+      PrimitiveType.Primitive.Int -> "0",
+      PrimitiveType.Primitive.Long -> "0l",
+      PrimitiveType.Primitive.Short -> "0.0")
 
   class Context {  
     var arrayAccess = false
@@ -927,7 +937,7 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
     }
     printArguments(n.getArgs, arg)
   }
-
+  
   def visit(n: VariableDeclarationExpr, arg: Context) {
     val asParameter = n.getModifiers == -1
     var modifier = if (ModifierSet.isFinal(n.getModifiers)) "val " else "var "
@@ -951,7 +961,8 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
         if (!asParameter) {
           printer.print(" = ")
           if (n.getType.isInstanceOf[PrimitiveType]) {
-            printer.print("0")
+            val ptype = n.getType.asInstanceOf[PrimitiveType]
+            printer.print(DEFAULTS(ptype.getType))
           } else {
             printer.print("null")
           }
