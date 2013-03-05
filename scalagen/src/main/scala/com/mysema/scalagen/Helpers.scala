@@ -13,6 +13,7 @@
  */
 package com.mysema.scalagen
 
+import java.lang.reflect.Modifier
 import japa.parser.ast.body.ModifierSet
 import _root_.scala.collection.JavaConversions
 import _root_.scala.collection.Set
@@ -23,6 +24,7 @@ import _root_.scala.collection.Set
 trait Helpers {
   import Types._
   
+  val PRIVATE = Modifier.PRIVATE
   val PROPERTY = 0x00001000
   val LAZY     = 0x00002000
   val OBJECT   = 0x00004000
@@ -69,7 +71,7 @@ trait Helpers {
   implicit def toRichBlock(b: Block) = new RichBlockStmt(b)
   
   class RichBlockStmt(b: Block) {    
-    def apply(i: Int) = b.getStmts.get(i)
+    def apply(i: Int) = if (isEmpty) null else b.getStmts.get(i)
     def isEmpty = b.getStmts == null || b.getStmts.isEmpty
     def add(s: Statement) {
       b.setStmts(b.getStmts :+ s)

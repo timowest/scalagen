@@ -48,7 +48,10 @@ class Properties extends UnitTransformerBase {
     for ( (name, variable, field) <- fields) {
       var getter = getters(name)
       val body = getter.getBody
-      if (isReturnFieldStmt(body(0))) {
+      if (getter.getModifiers.isAbstract) {
+        t.setMembers(t.getMembers - getter)
+        field.removeModifier(PRIVATE)
+      } else if (isReturnFieldStmt(body(0))) {
         //t.getMembers.remove(getter)
         t.setMembers(t.getMembers - getter)
         field.setModifiers(getter.getModifiers)
