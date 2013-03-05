@@ -1166,11 +1166,14 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
     if (n.getBlock.getStmts != null) {
       val i = n.getBlock.getStmts.iterator
       while (i.hasNext) {
-        i.next.accept(this, arg)
-        if (i.hasNext) {
-          printer.printLn()
-          printer.printLn()
-        }
+        val stmt = i.next()
+        if (!stmt.isInstanceOf[ExplicitConstructorInvocationStmt]) {
+          stmt.accept(this, arg)
+          if (i.hasNext) {
+            printer.printLn()
+            printer.printLn()
+          }  
+        }        
       }
     }
   }

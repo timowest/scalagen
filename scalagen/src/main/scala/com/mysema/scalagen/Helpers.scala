@@ -17,6 +17,7 @@ import java.lang.reflect.Modifier
 import japa.parser.ast.body.ModifierSet
 import _root_.scala.collection.JavaConversions
 import _root_.scala.collection.Set
+import java.util.ArrayList
 
 /**
  * Common helper methods for transformers and ScalaDumpVisitor
@@ -85,6 +86,14 @@ trait Helpers {
     def removeAll(s: List[Statement]) {
       b.setStmts(b.getStmts -- s)
     }
+    def copy(): Block = {
+      def block = new Block()
+      def stmts = new ArrayList[Statement]()
+      stmts.addAll(b.getStmts)
+      block.setStmts(stmts)
+      block
+    }
+    
     def size = if (b.getStmts != null) b.getStmts.size else 0
   }  
     
