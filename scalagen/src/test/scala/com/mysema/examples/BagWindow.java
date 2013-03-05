@@ -1,6 +1,11 @@
 package com.mysema.examples;
 
-public class BagWindow extends BagWindowSuper {
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.AdjustmentEvent;
+import java.awt.event.AdjustmentListener;
+
+public class BagWindow extends BagWindowSuper implements ActionListener, AdjustmentListener { 
 
     Bag<?> bag;
     
@@ -10,6 +15,16 @@ public class BagWindow extends BagWindowSuper {
         super(title);
         bag = b;
         str = "abc";
+    }
+
+    @Override
+    public void adjustmentValueChanged(AdjustmentEvent e) {
+        
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        
     }
     
 }
