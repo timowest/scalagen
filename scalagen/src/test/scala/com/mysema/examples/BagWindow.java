@@ -7,14 +7,21 @@ import java.awt.event.AdjustmentListener;
 
 public class BagWindow extends BagWindowSuper implements ActionListener, AdjustmentListener { 
 
-    Bag<?> bag;
+    private Bag<?> bag;
     
-    String str;
+    private String str;
+    
+    private int showLevel;
     
     public BagWindow(Bag<?> b, String title) {
         super(title);
         bag = b;
         str = "abc";
+        adjustmentValueChanged(null);
+    }
+    
+    public int showLevel() {
+        return showLevel;
     }
 
     @Override
