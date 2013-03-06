@@ -28,7 +28,7 @@ class ScalaCompilationTest extends AbstractParserTest with CompileTestUtils {
     val resources = List[File](new File("src/test/scala/com/mysema/examples").listFiles():_*)
     
     // parallel compilation
-    val failures = resources.filter(_.getName.endsWith(".java")).par.map { f =>
+    val failures = resources.filter(_.getName.endsWith(".java")).map { f =>
       var unit = JavaParser.parse(new FileInputStream(f))
       val source = toScala(unit)      
       try {

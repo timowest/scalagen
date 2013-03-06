@@ -982,8 +982,9 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
   }
 
   def visit(n: AssertStmt, arg: Context) {
-    printer.print("assert ")
+    printer.print("assert(")
     n.getCheck.accept(this, arg)
+    printer.print(")")
     if (n.getMessage != null) {
       printer.print(" : ")
       n.getMessage.accept(this, arg)
