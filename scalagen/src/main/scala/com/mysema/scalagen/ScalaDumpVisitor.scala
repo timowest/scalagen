@@ -917,7 +917,13 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
     }   
     n.getId.accept(this, arg)
     printer.print(": ")
+    for (i <- 0 until n.getId.getArrayCount) {
+       printer.print("Array[")
+    }
     n.getType.accept(this, arg)
+    for (i <- 0 until n.getId.getArrayCount) {
+      printer.print("]")
+    }
     if (n.isVarArgs) {
       printer.print("*")
     }

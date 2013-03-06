@@ -247,6 +247,14 @@ class SerializationTest extends AbstractParserTest {
   }
   
   @Test
+  def Static {
+    val sources = toScala[Static]
+    assertContains(sources,
+      "def main(args: Array[String])",
+      "def main2(args: Array[String])")
+  }
+  
+  @Test
   def TryCatch {
     val sources = toScala[TryCatch]
     assertContains(sources, 
