@@ -49,10 +49,18 @@ class Constructors extends UnitTransformerBase {
       t.getMembers.remove(c)
       t.getMembers.add(t.getMembers.indexOf(constr(0)), c)
     }   
-        
+    
     // copy initializer, if constructor block has non-constructor statements
     val c = first.getOrElse(constr(0))  
-        
+    
+    // add empty constructor invocation for all other constructors without
+    // constructor invocations
+    constr.filter(_ != c).foreach { c => 
+      if (c.getBlock.isEmpty) {// || !c.getBlock()(0).isInstanceOf[ConstructorInvocation]) {
+        c.getBlock.add(new ConstructorInvocation(true, null, null))
+      }
+    }
+    
     if (!c.getBlock.isEmpty &&  
         !c.getBlock.getStmts.filter(!_.isInstanceOf[ConstructorInvocation]).isEmpty) {
       

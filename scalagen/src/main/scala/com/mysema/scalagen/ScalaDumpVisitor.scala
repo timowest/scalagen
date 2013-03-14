@@ -835,7 +835,7 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
     if (!first) {
       printer.print("def this")
       printTypeParameters(n.getTypeParameters, arg)
-    }    
+    }   
     printer.print("(")
     if (n.getParameters != null) {
       var lineBreaks = n.getParameters.size > 3
