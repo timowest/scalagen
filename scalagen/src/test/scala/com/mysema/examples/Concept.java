@@ -5,9 +5,11 @@ public final class Concept extends Item {
     private Object term;    
     private Object memory;
 
-    public Concept(Object tm, Object memory) {
-        super(tm.toString());
-        term = tm;
+    // XXX this signature fails
+    // public Concept(Object tm, Object memory) 
+    public Concept(Object term, Object memory) {
+        super(term.toString());
+        this.term = term;
         this.memory = memory;
     }
 
