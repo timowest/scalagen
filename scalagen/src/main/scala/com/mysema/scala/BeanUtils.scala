@@ -19,7 +19,7 @@ import org.apache.commons.lang3.StringUtils
 object BeanUtils {
 
   def capitalize(name: String): String = {
-    if (name.length > 1 && name.charAt(1).isUpperCase) {
+    if (name.length > 1 && Character.isUpperCase(name.charAt(1))) {
        name
     } else {
        StringUtils.capitalize(name)

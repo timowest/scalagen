@@ -15,16 +15,16 @@ package com.mysema.scalagen
 
 import japa.parser.ast.visitor._
 import java.util.ArrayList
+import japa.parser.ast.ImportDeclaration
+import japa.parser.ast.expr.NameExpr
 import japa.parser.ast.visitor.ModifierVisitorAdapter
 import UnitTransformer._
-
-object Annotations extends Annotations
 
 /**
  * Annotations turns Annotation type declarations into normal classes which extend
  * StaticAnnotation
  */
-class Annotations extends UnitTransformerBase {
+class Annotations(targetVersion: ScalaVersion) extends UnitTransformerBase {
   
   private val staticAnnotationType = new ClassOrInterface("StaticAnnotation")
   
@@ -34,6 +34,11 @@ class Annotations extends UnitTransformerBase {
     
   override def visit(n: AnnotationDecl, arg: CompilationUnit) = {
     // turns annotations into StaticAnnotation subclasses
+    if (targetVersion == Scala210) {
+      //StaticAnnotation was in the "scala" package in 2.9, so it was imported by default
+      //in scala 2.10, it was moved to the scala.annotation package, so we need an explicit import
+      arg.getImports().add(new ImportDeclaration(new NameExpr("scala.annotation.StaticAnnotation"), false, false))
+    }
     val clazz = new ClassOrInterfaceDecl()
     clazz.setName(n.getName)    
     clazz.setExtends(staticAnnotationType :: Nil)

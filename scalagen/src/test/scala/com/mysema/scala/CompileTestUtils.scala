@@ -1,7 +1,6 @@
 package com.mysema.scala
 
 import scala.tools.nsc._
-import scala.tools.nsc.InterpreterResults._
 import scala.io.Source.fromFile
 import java.io.File
 
@@ -37,7 +36,10 @@ trait CompileTestUtils {
     val interpreter = new Interpreter(env, interpreterWriter)
     try {
       val result = interpreter.interpret(source.replaceAll("package ", "import "))
-      if (result != Success) {
+      //we have to compare as a string because of an incompatibility between 2.9 and 2.10:
+      //in 2.9, result is scala.tools.nsc.InterpreterResults
+      //in 2.10, result is scala.tools.nsc.interpreter.Results
+      if (result.toString != "Success") {
         throw new AssertionError("Compile failed, interpreter output:\n" + out.toString("utf-8"))
       }
     } finally {
