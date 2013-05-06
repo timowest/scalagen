@@ -331,7 +331,7 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
     printTypeParameters(n.getTypeParameters, arg)
     var constr = getFirstConstructor(n.getMembers)
     if (constr != null) {
-      n.setMembers(n.getMembers - constr)
+      n.setMembers(n.getMembers.filterNot(_ == constr))
     }
     var superInvocation: Option[ExplicitConstructorInvocationStmt] = None
     if (constr != null) {

@@ -88,7 +88,7 @@ class CompanionObject extends UnitTransformer {
     
     val staticMembers = t.getMembers.filter(isStatic)
     if (!staticMembers.isEmpty) {
-      t.setMembers(t.getMembers -- staticMembers)
+      t.setMembers(t.getMembers.filterNot(staticMembers.contains))
       var companion = new ClassOrInterfaceDecl(OBJECT, false, t.getName)
       companion.setMembers(staticMembers)
       companion

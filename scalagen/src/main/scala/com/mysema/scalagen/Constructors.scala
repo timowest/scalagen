@@ -122,7 +122,7 @@ class Constructors extends UnitTransformerBase {
               copyAnnotationsAndModifiers(field, param)
               // remove field
               //field.getVariables.remove(variables(namedTarget.getName))
-              field.setVariables(field.getVariables - variables(namedTarget.getName))  
+              field.setVariables(field.getVariables.filterNot(_ == variables(namedTarget.getName)))  
             }            
           } else { // field = ?!?
             variables(namedTarget.getName).setInit(assign.getValue)              
@@ -147,7 +147,7 @@ class Constructors extends UnitTransformerBase {
           .foreach(copyAnnotationsAndModifiers(field,_))
         // remove field, as constructor parameter can be used
         //field.getVariables.remove(variables(fieldAccess.getField))
-        field.setVariables(field.getVariables - variables(fieldAccess.getField))
+        field.setVariables(field.getVariables.filterNot(_ == variables(fieldAccess.getField)))
          
       } else {
         // remove statement, put init to field

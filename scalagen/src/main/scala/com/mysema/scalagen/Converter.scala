@@ -19,29 +19,60 @@ import japa.parser.ast.{ImportDeclaration, CompilationUnit}
 import org.apache.commons.io.FileUtils
 import java.util.ArrayList
 import japa.parser.ParseException
+import java.io.ByteArrayInputStream
+import java.util.regex.Pattern
+import scala.util.{Properties => ScalaProperties}
 
 object Converter {
   
   /**
    * default instance for Converter type
    */
-  lazy val instance = new Converter("UTF-8",List[UnitTransformer](
-    Rethrows,
-    VarToVal,
-    Synchronized,
-    RemoveAsserts, 
-    Annotations,
-    Enums,
-    Primitives,
-    SerialVersionUID,
-    ControlStatements, 
-    CompanionObject,
-    Underscores,
-    BeanProperties, 
-    Properties,
-    Constructors, 
-    Initializers,
-    SimpleEquals))  
+  lazy val instance = instance29
+  
+  /**
+   * Converter targeting scala 2.9
+   */
+  lazy val instance29 = createConverter(Scala29)
+  
+  /**
+   * Converter targeting scala 2.10
+   */
+  lazy val instance210 = createConverter(Scala210)
+  
+  def getInstance(version: ScalaVersion) = version match {
+    case Scala29 => instance29
+    case Scala210 => instance210
+  }
+  
+  /**
+   * Converter for the current runtime scala version
+   */
+  def getInstance(): Converter = {
+    //we can't use ScalaProperties.scalaVersionNumber because it's new in 2.10
+    val scalaVersionNumber = ScalaProperties.versionString.drop("version ".length)
+    getInstance(ScalaVersion.getVersion(scalaVersionNumber))
+  }
+  
+  private def createConverter(version: ScalaVersion) = {
+    new Converter("UTF-8",List[UnitTransformer](
+      Rethrows,
+      VarToVal,
+      Synchronized,
+      RemoveAsserts, 
+      new Annotations(version),
+      Enums,
+      Primitives,
+      SerialVersionUID,
+      ControlStatements, 
+      CompanionObject,
+      Underscores,
+      BeanProperties, 
+      Properties,
+      Constructors, 
+      Initializers,
+      SimpleEquals))
+  }
   
 }
 
@@ -70,8 +101,8 @@ class Converter(encoding: String, transformers: List[UnitTransformer]) {
       case e: Exception => throw new RuntimeException("Caught Exception for " + in.getPath, e) 
     }    
   }
-    
-  def toScala(unit: CompilationUnit): String = {
+  
+def toScala(unit: CompilationUnit): String = {
     if (unit.getImports == null) {
       unit.setImports(new ArrayList[ImportDeclaration]())  
     }    
