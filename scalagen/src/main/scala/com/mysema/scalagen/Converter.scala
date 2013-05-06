@@ -13,7 +13,7 @@
  */
 package com.mysema.scalagen
 
-import java.io.File
+import java.io.{File, ByteArrayInputStream}
 import japa.parser.JavaParser
 import japa.parser.ast.{ImportDeclaration, CompilationUnit}
 import org.apache.commons.io.FileUtils
@@ -70,7 +70,12 @@ class Converter(encoding: String, transformers: List[UnitTransformer]) {
       case e: Exception => throw new RuntimeException("Caught Exception for " + in.getPath, e) 
     }    
   }
-    
+  
+  def convert(javaSource: String): String = {
+    val compilationUnit = JavaParser.parse(new ByteArrayInputStream(javaSource.getBytes), encoding)
+    toScala(compilationUnit)
+  }
+  
   def toScala(unit: CompilationUnit): String = {
     if (unit.getImports == null) {
       unit.setImports(new ArrayList[ImportDeclaration]())  
