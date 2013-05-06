@@ -32,4 +32,9 @@ class ConverterTest extends AbstractParserTest {
     assertTrue(new File("target/test2/scala/com/mysema/examples/Bean.scala").length > 0)
   }
 
+  @Test
+  def Convert_String_Has_Content {
+    assertTrue(Converter.instance.convert("class A {}").length > 0)
+  }
+  
 }
