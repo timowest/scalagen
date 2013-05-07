@@ -20,12 +20,13 @@
     <scala.version>2.9.1</scala.version>
   </properties>  
   
-<licenses>
+  <licenses>
     <license>
-      <name>LGPL 2.1</name>
-      <url>LICENSE.txt</url>
+      <name>The Apache Software License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
     </license>
-  </licenses>    
+  </licenses>
 
   <dependencies>
     <dependency>
