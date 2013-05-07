@@ -81,10 +81,10 @@ trait Helpers {
       b.setStmts(b.getStmts ++ s)
     }
     def remove(s: Statement) {
-      b.setStmts(b.getStmts - s)
+      b.setStmts(b.getStmts.filterNot(_ == s))
     }
     def removeAll(s: List[Statement]) {
-      b.setStmts(b.getStmts -- s)
+      b.setStmts(b.getStmts.filterNot(s.contains))
     }
     def copy(): Block = {
       def block = new Block()

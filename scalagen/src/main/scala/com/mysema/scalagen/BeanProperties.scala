@@ -51,8 +51,8 @@ class BeanProperties extends UnitTransformerBase with BeanHelpers {
     for ( (name, variable, field) <- fields) {
       var getter = getters(name)
       //t.getMembers.remove(getter)
-      t.setMembers(t.getMembers - getter)
-      setters.get(name).foreach { s => t.setMembers(t.getMembers - s) }
+      t.setMembers(t.getMembers.filterNot(_ == getter))
+      setters.get(name).foreach { s => t.setMembers(t.getMembers.filterNot(_ == s)) }
       
       // make field public
       val isFinal = field.getModifiers.isFinal

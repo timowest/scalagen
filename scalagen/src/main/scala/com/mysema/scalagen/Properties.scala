@@ -49,15 +49,15 @@ class Properties extends UnitTransformerBase {
       var getter = getters(name)
       val body = getter.getBody
       if (getter.getModifiers.isAbstract) {
-        t.setMembers(t.getMembers - getter)
+        t.setMembers(t.getMembers.filterNot(_ == getter))
         field.removeModifier(PRIVATE)
       } else if (isReturnFieldStmt(body(0))) {
         //t.getMembers.remove(getter)
-        t.setMembers(t.getMembers - getter)
+        t.setMembers(t.getMembers.filterNot(_ == getter))
         field.setModifiers(getter.getModifiers)
       } else if (isLazyCreation(body,name)) {
         //t.getMembers.remove(getter)
-        t.setMembers(t.getMembers - getter)
+        t.setMembers(t.getMembers.filterNot(_ == getter))
         variable.setInit(getLazyInit(body))
         field.setModifiers(getter.getModifiers
           .addModifier(LAZY).addModifier(ModifierSet.FINAL))

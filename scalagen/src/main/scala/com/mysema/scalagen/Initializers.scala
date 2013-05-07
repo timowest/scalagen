@@ -49,7 +49,8 @@ class Initializers extends UnitTransformerBase {
       }
       
       // remove empty initializers
-      t.setMembers( t.getMembers -- initializers.filter(_.getBlock.isEmpty) )      
+      val emptyInitializerBlocks = initializers.filter(_.getBlock.isEmpty)
+      t.setMembers( t.getMembers.filterNot(emptyInitializerBlocks.contains) )      
     }
     t
   }
