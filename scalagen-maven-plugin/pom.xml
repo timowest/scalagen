@@ -9,7 +9,7 @@
   </parent>
 
   <groupId>com.mysema.scalagen</groupId>
-  <artifactId>scalagen-maven-plugin</artifactId>
+  <artifactId>scalagen-maven-plugin_${scala.version}</artifactId>
   <version>0.2.2</version>
   <name>Scalagen - Maven plugin</name>
   <description>Scalagen Maven plugin</description>
@@ -17,9 +17,27 @@
   
   <properties>
     <mvn.version>2.2.1</mvn.version>
-    <scala.version>2.9.1</scala.version>
   </properties>  
-  
+ 
+  <profiles>
+    <profile>
+      <id>scala-2.9.x</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <properties>
+        <scala.version>2.9.3</scala.version>
+      </properties>
+    </profile>
+    
+    <profile>
+      <id>scala-2.10.x</id>
+      <properties>
+        <scala.version>2.10.1</scala.version>
+      </properties>
+    </profile>
+  </profiles>
+ 
   <licenses>
     <license>
       <name>The Apache Software License, Version 2.0</name>
@@ -47,7 +65,7 @@
 
     <dependency>
       <groupId>com.mysema.scalagen</groupId>
-      <artifactId>scalagen</artifactId>
+      <artifactId>scalagen_${scala.version}</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
