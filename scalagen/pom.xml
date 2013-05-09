@@ -3,7 +3,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.mysema.scalagen</groupId>
-  <artifactId>scalagen</artifactId>
+  <artifactId>scalagen_${scala.version}</artifactId>
   <version>0.2.2</version>
   <name>Scalagen</name>
     
@@ -33,9 +33,27 @@
   <properties>
     <commons.collections.version>4.01</commons.collections.version>
     <commons.lang.version>3.0.1</commons.lang.version>
-    <scala.version>2.9.1</scala.version>
     <querydsl.version>2.3.0</querydsl.version>
   </properties>
+  
+  <profiles>
+    <profile>
+      <id>scala-2.9.x</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <properties>
+        <scala.version>2.9.3</scala.version>
+      </properties>
+    </profile>
+    
+    <profile>
+      <id>scala-2.10.x</id>
+      <properties>
+        <scala.version>2.10.1</scala.version>
+      </properties>
+    </profile>
+  </profiles>
   
   <dependencies>
     <dependency>
