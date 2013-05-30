@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.mysema.scalagen</groupId>
   <artifactId>scalagen_${scala.version}</artifactId>
-  <version>0.2.2</version>
+  <version>0.3.0</version>
   <name>Scalagen</name>
     
   <parent>

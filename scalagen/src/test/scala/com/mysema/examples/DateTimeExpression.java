@@ -1,6 +1,6 @@
 /*
  * Copyright 2011, Mysema Ltd
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -24,8 +24,6 @@ import com.mysema.query.types.Operation;
 import com.mysema.query.types.OperationImpl;
 import com.mysema.query.types.Operator;
 import com.mysema.query.types.Ops;
-import com.mysema.query.types.Path;
-import com.mysema.query.types.PathImpl;
 import com.mysema.query.types.Visitor;
 import com.mysema.query.types.expr.NumberExpression;
 import com.mysema.query.types.expr.NumberOperation;
@@ -102,15 +100,15 @@ public abstract class DateTimeExpression<T extends Comparable<T>> extends Tempor
         super(type);
     }
 
-    @Override
-    public DateTimeExpression<T> as(Path<T> alias) {
-        return DateTimeOperation.<T>create((Class<T>)getType(), Ops.ALIAS, this, alias);
-    }
+//    @Override
+//    public DateTimeExpression<T> as(Path<T> alias) {
+//        return DateTimeOperation.<T>create((Class<T>)getType(), Ops.ALIAS, this, alias);
+//    }
 
-    @Override
-    public DateTimeExpression<T> as(String alias) {
-        return as(new PathImpl<T>(getType(), alias));
-    }
+//    @Override
+//    public DateTimeExpression<T> as(String alias) {
+//        return as(new PathImpl<T>(getType(), alias));
+//    }
 
     /**
      * Get a day of month expression (range 1-31)
