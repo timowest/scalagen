@@ -23,69 +23,69 @@ object Constructors extends Constructors
  * Constructors reorders and normalizes constructors
  */
 class Constructors extends UnitTransformerBase {
-   
+
   def transform(cu: CompilationUnit): CompilationUnit = {
-    cu.accept(this, cu).asInstanceOf[CompilationUnit] 
-  }  
-  
-  override def visit(n: ClassOrInterfaceDecl, cu: CompilationUnit):  ClassOrInterfaceDecl = {  
+    cu.accept(this, cu).asInstanceOf[CompilationUnit]
+  }
+
+  override def visit(n: ClassOrInterfaceDecl, cu: CompilationUnit):  ClassOrInterfaceDecl = {
     val t = super.visit(n, cu).asInstanceOf[ClassOrInterfaceDecl]
     // make members list mutable
     t.setMembers(new ArrayList[BodyDecl](t.getMembers))
-    
+
     // get all constructors
     val constr = t.getMembers.collect { case c: Constructor => c }
-      
+
     if (constr.isEmpty) {
       return t
     }
-    
+
     // get first without delegating
     val first = constr.find( c =>
       c.getBlock.isEmpty || !isThisConstructor(c.getBlock()(0)))
-    
+
     // move in front of others
     first.filter(_ != constr(0)).foreach { c =>
       t.getMembers.remove(c)
       t.getMembers.add(t.getMembers.indexOf(constr(0)), c)
-    }   
-    
+    }
+
     // copy initializer, if constructor block has non-constructor statements
-    val c = first.getOrElse(constr(0))  
-    
+    val c = first.getOrElse(constr(0))
+
     // add empty constructor invocation for all other constructors without
     // constructor invocations
-    constr.filter(_ != c).foreach { c => 
+    constr.filter(_ != c).foreach { c =>
       if (c.getBlock.isEmpty) {// || !c.getBlock()(0).isInstanceOf[ConstructorInvocation]) {
         c.getBlock.add(new ConstructorInvocation(true, null, null))
       }
     }
-    
-    if (!c.getBlock.isEmpty &&  
+
+    if (!c.getBlock.isEmpty &&
         !c.getBlock.getStmts.filter(!_.isInstanceOf[ConstructorInvocation]).isEmpty) {
-      
+
       processStatements(cu, t, c)
-      
+
       if (!c.getBlock.isEmpty &&
           !(c.getBlock.size == 1 && c.getBlock()(0).isInstanceOf[ConstructorInvocation] &&
           !c.getBlock()(0).asInstanceOf[ConstructorInvocation].isThis())) {
         val initializer = new Initializer(false, c.getBlock)
         t.getMembers.add(t.getMembers.indexOf(c), initializer)
-      } 
-      
+      }
+
       /*val block = c.getBlock.copy()
-      
-      if (!block.isEmpty 
+
+      if (!block.isEmpty
           && block(0).isInstanceOf[ConstructorInvocation]
           && !block(0).asInstanceOf[ConstructorInvocation].isThis) {
         block.remove(block(0))
-      }      
+      }
       if (!block.isEmpty) {
         val initializer = new Initializer(false, block)
-        t.getMembers.add(t.getMembers.indexOf(c), initializer)  
-      }*/      
-    }    
-    
+        t.getMembers.add(t.getMembers.indexOf(c), initializer)
+      }*/
+    }
+
     // add missing delegations
     t.getMembers.collect { case c: Constructor => c }.filter(_ != c)
       .foreach { c =>
@@ -96,12 +96,12 @@ class Constructors extends UnitTransformerBase {
       }
     t
   }
-  
+
   private def processStatements(cu: CompilationUnit, t: TypeDecl, c: Constructor) {
     val fields = t.getMembers.collect { case f: Field => f }
     val variables = fields.flatMap(_.getVariables).map(v => (v.getId.getName, v)).toMap
     val variableToField = fields.flatMap(f => f.getVariables.map(v => (v.getId.getName,f)) ).toMap
-      
+
     // go through statements and map assignments to variable initializers
     c.getBlock.getStmts.collect { case s: ExpressionStmt => s }
       .filter(isAssignment(_))
@@ -122,22 +122,22 @@ class Constructors extends UnitTransformerBase {
               copyAnnotationsAndModifiers(field, param)
               // remove field
               //field.getVariables.remove(variables(namedTarget.getName))
-              field.setVariables(field.getVariables.filterNot(_ == variables(namedTarget.getName)))  
-            }            
+              field.setVariables(field.getVariables.filterNot(_ == variables(namedTarget.getName)))
+            }
           } else { // field = ?!?
-            variables(namedTarget.getName).setInit(assign.getValue)              
-          }          
+            variables(namedTarget.getName).setInit(assign.getValue)
+          }
           c.getBlock.remove(s)
         }
       }
     }
-    
+
     // remove empty field declarations
     fields.filter(_.getVariables.isEmpty).foreach { t.getMembers.remove(_) }
-    
+
   }
 
-  private def processFieldAssign(s: ExpressionStmt, assign: Assign, fieldAccess: FieldAccess, 
+  private def processFieldAssign(s: ExpressionStmt, assign: Assign, fieldAccess: FieldAccess,
       c: Constructor, variables: Map[String, Variable], variableToField: Map[String, Field] ) {
     if (fieldAccess.getScope.isInstanceOf[This] &&
         variables.contains(fieldAccess.getField)) {
@@ -148,22 +148,22 @@ class Constructors extends UnitTransformerBase {
         // remove field, as constructor parameter can be used
         //field.getVariables.remove(variables(fieldAccess.getField))
         field.setVariables(field.getVariables.filterNot(_ == variables(fieldAccess.getField)))
-         
+
       } else {
         // remove statement, put init to field
-        variables(fieldAccess.getField).setInit(assign.getValue)            
-      }            
-      c.getBlock.remove(s)  
+        variables(fieldAccess.getField).setInit(assign.getValue)
+      }
+      c.getBlock.remove(s)
     }
   }
-  
+
   private def copyAnnotationsAndModifiers(f: Field, p: Parameter) {
     if (f.getAnnotations != null) {
       p.setAnnotations(p.getAnnotations.union(f.getAnnotations))
     }
-    
-    val modifiers = f.getModifiers.removeModifier(ModifierSet.PRIVATE).addModifier(PROPERTY)
+
+    val modifiers = f.getModifiers.addModifier(PROPERTY)
     p.setModifiers(modifiers)
-  }  
-  
+  }
+
 }

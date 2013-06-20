@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.mysema.scalagen 
+package com.mysema.scalagen
 
 import java.io.File
 import java.io.FileInputStream
@@ -22,89 +22,95 @@ import japa.parser.JavaParser
 import com.mysema.examples._
 
 class SerializationTest extends AbstractParserTest {
-  
+
   private def assertContains(str: String, strings: String*) {
     strings.foreach { s => assertTrue(s + " was not found", str.contains(s)) }
   }
-  
+
   @Test
   def AbstractCodeWriter {
     val sources = toScala[AbstractCodeWriter[_]]
     assertContains(sources,
       "abstract class AbstractCodeWriter[T <: AbstractCodeWriter[T]]" +
-      "(val appendable: Appendable, val spaces: Int)\n    extends Appendable {")
+      "(private val appendable: Appendable, private val spaces: Int)\n    extends Appendable {")
   }
-  
+
   @Test
   def AbstractDao {
     val sources = toScala[AbstractDao[_]]
     assertContains(sources, "protected def query(): JPQLQuery = new HibernateQuery(getSession)")
   }
-  
+
   @Test
   def AnnotatedElementAdapter {
     val sources = toScala[AnnotatedElementAdapter]
     assertContains(sources, "for (element <- elements; annotation <- element.getAnnotations) {")
   }
-  
+
   @Test
   def ArrayConstructorExpression {
     val sources = toScala[ArrayConstructorExpression[_]]
-    assertContains(sources, 
+    assertContains(sources,
       "@SerialVersionUID(8667880104290226505L)",
       "val elementType = `type`.getComponentType.asInstanceOf[Class[T]]",
       "override def equals(obj: Any): Boolean =")
-    
+
   }
-  
+
   @Test
   def ArrayTests {
     val sources = toScala[ArrayTests]
-    assertContains(sources, "def foo(): Array[Int] = Array.ofDim[Int](2)")        
+    assertContains(sources, "def foo(): Array[Int] = Array.ofDim[Int](2)")
   }
-  
+
   @Test
   def Bean {
     val sources = toScala[Bean]
     assertContains(sources, "@BeanProperty")
   }
-  
+
   @Test
   def Bean2 {
     val sources = toScala[Bean2]
     assertContains(sources, "@BeanProperty")
   }
-  
+
   @Test
   def BeanWithUnderscores {
     val sources = toScala[BeanWithUnderscores]
-    assertContains(sources, 
-        "var firstName: String = _", 
+    assertContains(sources,
+        "var firstName: String = _",
         "override def toString(): String = firstName + \" \" + this.lastName")
   }
-  
+
   @Test
   def Casts {
     val sources = toScala[Casts]
     assertContains(sources, "args.length.toDouble")
   }
-  
+
   @Test
   def ConstantImpl {
     val sources = toScala[ConstantImpl[_]]
     assertContains(sources, "private val BYTES = new Array[Constant[Byte]](CACHE_SIZE)")
   }
-    
+
   @Test
   def Constructors {
     val sources = toScala[com.mysema.examples.Constructors]
     assertContains(sources, "class Constructors(first: String, last: String) {")
-  }    
-  
+  }
+
+  @Test
+  def Constructors2 {
+    val sources = toScala[com.mysema.examples.Constructors2]
+    assertContains(sources, "class C(private val a: Int)")
+  }
+
   @Test
   def Control {
     val sources = toScala[Control]
-    assertContains(sources, 
+    assertContains(sources,
         "for (i <- 0 until integers.size) {",
         "for (i <- integers) {",
         "for (i <- integers if i > 0) {",
@@ -113,17 +119,17 @@ class SerializationTest extends AbstractParserTest {
         "for ((key, value) <- entries) {",
         "println(key + \" \" + value)")
   }
-  
+
   @Test
   def Dao {
     val sources = toScala[IDao[_,_]]
     assertContains(sources, "trait IDao[Entity, Id <: Serializable] {")
   }
-  
+
   @Test
   def DateTimeExpression {
     val sources = toScala[DateTimeExpression[_]]
-    assertContains(sources, 
+    assertContains(sources,
         "lazy val dayOfMonth = NumberOperation.create(classOf[Integer], Ops.DateTimeOps.DAY_OF_MONTH, this)",
         "lazy val dayOfWeek = NumberOperation.create(classOf[Integer], Ops.DateTimeOps.DAY_OF_WEEK, this)",
         "lazy val dayOfYear = NumberOperation.create(classOf[Integer], Ops.DateTimeOps.DAY_OF_YEAR, this)",
@@ -132,120 +138,120 @@ class SerializationTest extends AbstractParserTest {
         "lazy val second = NumberOperation.create(classOf[Integer], Ops.DateTimeOps.SECOND, this)",
         "lazy val milliSecond = NumberOperation.create(classOf[Integer], Ops.DateTimeOps.MILLISECOND, this)")
   }
-  
+
   @Test
   def FileSystemRegistry {
     val sources = toScala[FileSystemRegistry]
-    assertContains(sources, "class FileSystemRegistry private () {")  
+    assertContains(sources, "class FileSystemRegistry private () {")
   }
-  
+
   @Test
   def IfElse {
     val sources = toScala[IfElse]
     assertContains(sources, "property = if (System.currentTimeMillis() > 0) \"y\" else \"z\"")
   }
-  
+
   @Test
   def Immutable {
     val sources = toScala[Immutable]
-    assertContains(sources, 
+    assertContains(sources,
         "class Immutable(@BeanProperty val firstName: String, @BeanProperty val lastName: String)",
         "val immutable = new Immutable")
   }
-  
+
   @Test
   def Immutable2 {
     val sources = toScala[Immutable2]
-    assertContains(sources, 
+    assertContains(sources,
         "class Immutable2(@BeanProperty val firstName: String, @BeanProperty val lastName: String)")
   }
-  
+
   @Test
   def Initializers {
-    
+
   }
-  
+
   @Test
   def InnerClasses {
     val sources = toScala[InnerClasses]
     assertContains(sources, "private class LoopContext private () {")
   }
-  
+
   @Test
   def LazyInitBeanAccessor {
     val sources = toScala[LazyInitBeanAccessor]
     assertContains(sources, "lazy val value = \"XXX\"")
   }
-  
+
   @Test
   def Modifiers {
     val sources = toScala[Modifiers]
-    assertContains(sources, 
+    assertContains(sources,
         "@transient private var foo: String = \"foo\"",
         "@volatile private var bar: String = \"bar\"")
   }
-  
+
   @Test
   def Ops {
     val sources = toScala[Ops]
     assertContains(sources, "object Ops {", "object AggOps {")
   }
-  
+
   @Test
   def Protected {
     val sources = toScala[Protected]
     assertContains(sources, "class Protected protected ()")
   }
-  
+
   @Test
   def Reserved {
     val sources = toScala[Reserved]
     assertContains(sources, "`object`","`type`","`var`","`val`")
   }
-  
+
   @Test
   def Resource {
     val sources = toScala[Resource]
     assertContains(sources, "case o: Resource => o.path == path")
   }
-  
+
   @Test
   def Returns {
     val sources = toScala[Returns]
     assertContains(sources,"(start until n).find(_ / 5 > 1).getOrElse(-1)")
-      //"for (i <- start until n if i / 5 > 1) return i",)    
+      //"for (i <- start until n if i / 5 > 1) return i",)
   }
-  
+
   @Test
   def SimpleCompiler {
     val sources = toScala[SimpleCompiler]
-    assertContains(sources, 
+    assertContains(sources,
       "for (url <- classLoader.asInstanceOf[URLClassLoader].getURLs) {",
       //"case e: UnsupportedEncodingException => throw new RuntimeException(e)",
       "this(ToolProvider.getSystemJavaCompiler, Thread.currentThread().getContextClassLoader)")
   }
-  
+
   @Test
   def SourceFileObject {
-    
+
   }
-  
+
   @Test
   def SuperConstructors {
     val sources = toScala[SuperConstructors]
-    assertContains(sources, 
+    assertContains(sources,
       "class SuperConstructors(first: String, last: String) extends SuperClass(first) {")
   }
-  
+
   @Test
   def SwitchCase {
     val sources = toScala[SwitchCase]
-    assertContains(sources, 
-      "case 0 => println(0)", 
+    assertContains(sources,
+      "case 0 => println(0)",
       "case 1 => println(1)",
       "case 0 | 1 => println(1)")
   }
-  
+
   @Test
   def Static {
     val sources = toScala[Static]
@@ -253,28 +259,28 @@ class SerializationTest extends AbstractParserTest {
       "def main(args: Array[String])",
       "def main2(args: Array[String])")
   }
-  
+
   @Test
   def TryCatch {
     val sources = toScala[TryCatch]
-    assertContains(sources, 
+    assertContains(sources,
       "case e: IllegalArgumentException => throw new RuntimeException(e)",
       "case e: NullPointerException => System.err.println(e.getMessage)")
-    
+
   }
-  
+
   @Test @Ignore // FIXME
   def WithComments {
     val sources = toScala[WithComments]
     assertContains(sources, "javadocs", "// comments inside")
   }
-  
+
   @Test
   def WithStatic {
     val sources = toScala[WithStatic]
     assertContains(sources, "object WithStatic {")
   }
-  
+
   @Test
   def WithStaticAndInstance {
     val sources = toScala[WithStaticAndInstance]
@@ -282,11 +288,11 @@ class SerializationTest extends AbstractParserTest {
       "object WithStaticAndInstance {",
       "class WithStaticAndInstance {")
   }
-  
+
   @Test
   def Wildcard {
     val sources = toScala[Wildcard]
     assertContains(sources, "def bar(list: List[_ <: CharSequence]): Int = list.size")
   }
-  
+
 }
