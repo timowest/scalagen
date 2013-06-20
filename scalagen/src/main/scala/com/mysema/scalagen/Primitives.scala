@@ -15,6 +15,7 @@ package com.mysema.scalagen
 
 import java.util.ArrayList
 import UnitTransformer._
+import japa.parser.ast.expr._
 
 object Primitives extends Primitives
 
@@ -22,26 +23,28 @@ object Primitives extends Primitives
  * Primitives modifies primitive type related constants and method calls
  */
 class Primitives extends UnitTransformerBase {
-  
+
   private val TRUE = new BooleanLiteral(true)
-  
+
   private val FALSE = new BooleanLiteral(false)
-  
+
   private val primitives = Set("Boolean","Byte","Char","Double","Float","Integer","Long","Short")
-  
+
   def transform(cu: CompilationUnit): CompilationUnit = {
-    cu.accept(this, cu).asInstanceOf[CompilationUnit] 
-  }  
-  
+    cu.accept(this, cu).asInstanceOf[CompilationUnit]
+  }
+
   override def visit(n: FieldAccess, arg: CompilationUnit): Node = n match {
     case FieldAccess(str("Boolean"), "TRUE") => TRUE
     case FieldAccess(str("Boolean"), "FALSE") => FALSE
     case _ => super.visit(n, arg)
   }
-    
+
+  // XXX doesn't work properly for e.g. Double.valueOf(String)
   override def visit(n: MethodCall, arg: CompilationUnit): Node = n match {
-    case MethodCall(str(scope), "valueOf", a :: Nil) if primitives.contains(scope) => a.accept(this, arg)
+    case MethodCall(str(scope), "valueOf", a :: Nil)
+        if primitives.contains(scope) && !a.isInstanceOf[LiteralExpr] => a.accept(this, arg)
     case _ => super.visit(n, arg)
   }
-  
-}  
+
+}
