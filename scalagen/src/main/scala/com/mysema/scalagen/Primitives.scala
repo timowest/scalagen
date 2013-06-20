@@ -40,11 +40,9 @@ class Primitives extends UnitTransformerBase {
     case _ => super.visit(n, arg)
   }
 
-  // XXX doesn't work properly for e.g. Double.valueOf(String)
-  override def visit(n: MethodCall, arg: CompilationUnit): Node = n match {
-    case MethodCall(str(scope), "valueOf", a :: Nil)
-        if primitives.contains(scope) && !a.isInstanceOf[LiteralExpr] => a.accept(this, arg)
-    case _ => super.visit(n, arg)
-  }
+//  override def visit(n: MethodCall, arg: CompilationUnit): Node = n match {
+//    case MethodCall(str(scope), "valueOf", a :: Nil) => a.accept(this, arg)
+//    case _ => super.visit(n, arg)
+//  }
 
 }

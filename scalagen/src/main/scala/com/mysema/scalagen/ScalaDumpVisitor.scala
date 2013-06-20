@@ -288,6 +288,8 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
   def visitName(name: String) {
     if (RESERVED.contains(name)) {
       printer.print("`"+name+"`")
+    } else if (PRIMITIVES.contains(name)) {
+      printer.print("java.lang."+ name)
     } else {
       printer.print(name)
     }
