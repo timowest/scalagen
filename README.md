@@ -1,4 +1,4 @@
-**Scalagen - Java to Scala conversion**
+## Scalagen - Java to Scala conversion
 
 Scalagen is a Java to Scala conversion tool. It uses a Java based parser for Java sources and provides modular 
 transformation of the AST to match Scala idioms. The resulting transformed AST is serialized into Scala format.
