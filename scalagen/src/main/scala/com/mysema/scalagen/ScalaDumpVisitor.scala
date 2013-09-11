@@ -40,8 +40,9 @@ object ScalaDumpVisitor {
   private val PRIMITIVES = Map("Boolean"->"Boolean","Byte"->"Byte","Character"->"Char","Double"->"Double",
       "Float"->"Float","Integer"->"Int","Long"->"Long","Short"->"Short")
 
-  private val SHORT_FORM = Set("asc","desc","eq","equals","gt","hashCode","hasNext","keys","keySet","length","lt","ne",
-      "query","size","toString","until","values","!=")
+  private val NO_ARGS_SHORT = Set("toString","asc","desc","hashCode","hasNext","keys","keySet","length","size","values")
+
+  private val SHORT_FORM = Set("eq","equals","gt","lt","ne","query","until","!=")
 
   private val RESERVED = Set("def","match","object","type","val","var")
 
@@ -741,7 +742,7 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
   def visit(n: MethodCallExpr, arg: Context) {
     //val split = arg.split
     var args = if (n.getArgs == null) 0 else n.getArgs.size
-    val shortForm = SHORT_FORM.contains(n.getName) && args < 2
+    val shortForm = (SHORT_FORM.contains(n.getName) && args < 2) || (NO_ARGS_SHORT.contains(n.getName) && args == 0)
     if (n.getScope != null) {
       val split = print(n.getScope, arg).length > 50
       n.getScope.accept(this, arg)
