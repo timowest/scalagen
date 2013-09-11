@@ -73,17 +73,6 @@ class Constructors extends UnitTransformerBase {
         t.getMembers.add(t.getMembers.indexOf(c), initializer)
       }
 
-      /*val block = c.getBlock.copy()
-
-      if (!block.isEmpty
-          && block(0).isInstanceOf[ConstructorInvocation]
-          && !block(0).asInstanceOf[ConstructorInvocation].isThis) {
-        block.remove(block(0))
-      }
-      if (!block.isEmpty) {
-        val initializer = new Initializer(false, block)
-        t.getMembers.add(t.getMembers.indexOf(c), initializer)
-      }*/
     }
 
     // add missing delegations

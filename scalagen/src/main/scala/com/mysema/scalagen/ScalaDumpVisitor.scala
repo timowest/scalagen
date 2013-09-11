@@ -339,11 +339,11 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
     var superInvocation: Option[ExplicitConstructorInvocationStmt] = None
     if (constr != null) {
       if (!isEmpty(constr.getParameters) || !constr.getModifiers.isPublic) {
-        printConstructor(constr, arg, true)
-        superInvocation = constr.getBlock.getStmts
+        printConstructor(constr, arg, true)        
+      }
+      superInvocation = constr.getBlock.getStmts
           .collect({ case x: ExplicitConstructorInvocationStmt => x })
           .filter(!_.isThis).headOption
-      }
     }
     var superTypes = new ArrayList[ClassOrInterfaceType]()
     if (n.getExtends != null) {
