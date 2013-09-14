@@ -18,7 +18,7 @@ class HelpersTest {
   
   @Test
   def IsEquals {
-    val method = new Method(0, Type.Boolean, "equals", Collections.singletonList[Parameter](null))
+    val method = new Method(0, Type.Boolean, "equals", Collections.singletonList[Parameter](new Parameter))
     assertTrue(helpers.isEquals(method))
   }
   
