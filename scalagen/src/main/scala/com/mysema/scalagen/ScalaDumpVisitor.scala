@@ -24,6 +24,7 @@ import java.util.HashMap
 import java.util.Iterator
 import java.util.List
 import org.apache.commons.lang3.StringUtils
+import japa.parser.ast.visitor.GenericVisitorAdapter
 
 object ScalaDumpVisitor {
 
@@ -171,7 +172,7 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
   }
 
   private def printTypeArgs(args: List[Type], arg: Context) {
-    if (args != null) {
+    if (args != null && !args.isEmpty) {
       val typeArg = arg.typeArg
       arg.typeArg = true
       printer.print("[")
@@ -242,8 +243,11 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
 
     printer.printLn("//remove if not needed")
     printer.printLn("import scala.collection.JavaConversions._")
+    if (hasTryWithResources(n)) {
+      printer.printLn("import resource._ //use scala-arm from http://jsuereth.com/scala-arm/")
+    }
     printer.printLn()
-
+    
     if (n.getPackage != null && !isEmpty(n.getPackage.getAnnotations)) {
       printMemberAnnotations(n.getPackage.getAnnotations, arg)
       printer.printLn("package object " + split(n.getPackage.getName)._2 + " {")
@@ -263,6 +267,16 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
     }
 
     arg.imports = Map[String,String]()
+  }
+  
+  private def hasTryWithResources(n: CompilationUnit): Boolean = {
+    val hasResourcesVisitor = new GenericVisitorAdapter[java.lang.Boolean, Null]() {
+      override def visit(n: TryStmt, arg: Null): java.lang.Boolean = {
+        if (n.getResources.isEmpty) null
+        else true
+      }
+    }
+    Option(n.accept(hasResourcesVisitor, null)).map(_.booleanValue).getOrElse(false)
   }
 
   private def split(name: NameExpr): (String, String) = {
@@ -690,15 +704,30 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
   }
 
   def visit(n: DoubleLiteralExpr, arg: Context) {
-    printer.print(n.getValue)
+    printer.print(removeUnderscores(n.getValue))
   }
 
   def visit(n: IntegerLiteralExpr, arg: Context) {
-    printer.print(n.getValue)
+    printer.print(numberValue(n.getValue, "Integer.parseInt"))
   }
 
   def visit(n: LongLiteralExpr, arg: Context) {
-    printer.print(n.getValue)
+    printer.print(numberValue(n.getValue, "java.lang.Long.parseLong"))
+  }
+  
+  private def removeUnderscores(n: String) = n.replaceAllLiterally("_", "")
+  
+  private def numberValue(n: String, parseMethod: String) = {
+    var number = removeUnderscores(n)
+    if (number.startsWith("0b") || number.startsWith("0B")) {
+      number = number.drop(2)
+      if (number.endsWith("L") || number.endsWith("l")) {
+        number = number.dropRight(1)
+      }
+      parseMethod + "(\"" + number + "\", 2)" 
+    } else {
+      number
+    }
   }
 
   def visit(n: IntegerLiteralMinValueExpr, arg: Context) {
@@ -931,6 +960,32 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
       printer.print("*")
     }
   }
+  
+  def visit(n: MultiTypeParameter, arg: Context) {
+    printAnnotations(n.getAnnotations, arg)
+    printModifiers(n.getModifiers)
+    if (n.getModifiers.isProperty) {
+       printer.print(if (n.getModifiers.isFinal) "val " else "var ")
+    }
+    n.getId.accept(this, arg)
+
+    n.getTypes.toList match {
+      case tpe :: Nil =>
+        printer.print(": ")
+        tpe.accept(this, arg)
+      case types =>
+        printer.print(" @ (")
+        for ((tpe, i) <- types.zipWithIndex) {
+          val last = i == types.length - 1
+          printer.print("_: ")
+          tpe.accept(this, arg)
+          if (!last) {
+            printer.print(" | ")
+          }
+        }
+        printer.print(")")
+    }
+  }
 
   def visit(n: ExplicitConstructorInvocationStmt, arg: Context) {
     if (n.isThis) {
@@ -978,6 +1033,19 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
           //printer.print(if (v.getInit() == null) "_" else "null")
         }
       } else {
+        v.getInit match {
+          case newObj: ObjectCreationExpr =>
+            if (newObj.getType() != null && (newObj.getType.getTypeArgs() == null || newObj.getType.getTypeArgs.isEmpty)) {
+              n.getType match {
+                case ref: ReferenceType => ref.getType match {
+                  case tpe: ClassOrInterfaceType => newObj.getType.setTypeArgs(tpe.getTypeArgs())
+                  case _ =>
+                }
+                case _ =>
+              }
+            }
+          case _ =>
+        }
         v.accept(this, arg)
       }
       if (i.hasNext) {
@@ -1322,10 +1390,52 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
     }
     n.getBlock.accept(this, arg)
   }
-
+  
   def visit(n: TryStmt, arg: Context) {
-    printer.print("try ")
-    n.getTryBlock.accept(this, arg)
+    val wrapInTry = !isEmpty(n.getCatchs()) || n.getFinallyBlock() != null
+    if (wrapInTry) {
+      printer.print("try ")
+    }
+    def printResource(rd: VariableDeclarationExpr): Unit = {
+      for (resource <- rd.getVars()) {
+        resource.getId.accept(this, arg)
+        printer.print(" <- managed(")
+        resource.getInit.accept(this, arg)
+        printer.print(")")
+      }
+    }
+
+    if (!n.getResources.isEmpty) {
+      if (wrapInTry) {
+        printer.printLn("{")
+        printer.indent()
+      }
+      printer.print("for ")
+      if (n.getResources.size == 1) {
+        printer.print("(")
+        val rd = n.getResources.get(0)
+        printResource(rd)
+        printer.print(")")
+      } else {
+        printer.printLn("{")
+        printer.indent()
+        for (rd <- n.getResources) {
+          printResource(rd)
+          printer.printLn()
+        }
+        printer.unindent()
+        printer.print("} ")
+      }
+      n.getTryBlock.accept(this, arg)
+      if (wrapInTry) {
+        printer.printLn()
+        printer.unindent()
+        printer.print("}")
+      }
+    } else {
+      n.getTryBlock.accept(this, arg)
+    }
+
     if (n.getCatchs != null) {
       printer.printLn(" catch {")
       printer.indent()
