@@ -373,14 +373,26 @@ abstract class ModifierVisitor[A] extends GenericVisitor[Node, A] {
     rv.setName(filter(n.getName, arg))
     rv    
   }
-
+  
   def visit(n: Parameter, arg: A): Node = {
     val rv = new Parameter()
+    visit(n, rv, arg)
+    rv.setType(filter(n.getType, arg))
+    rv.setVarArgs(n.isVarArgs)
+    rv
+  }
+  
+  def visit(n: MultiTypeParameter, arg: A): Node = {
+    val rv = new MultiTypeParameter()
+    visit(n, rv, arg)
+    rv.setTypes(n.getTypes().map(tpe => filter(tpe, arg)))
+    rv
+  }
+
+  def visit(n: BaseParameter, rv: BaseParameter, arg: A): Node = {
     rv.setAnnotations(filter(n.getAnnotations, arg))
     rv.setId(filter(n.getId, arg))
     rv.setModifiers(n.getModifiers)
-    rv.setType(filter(n.getType, arg))
-    rv.setVarArgs(n.isVarArgs)
     rv
   }
 
@@ -442,6 +454,7 @@ abstract class ModifierVisitor[A] extends GenericVisitor[Node, A] {
 
   def visit(n: TryStmt, arg: A): Node = {
     val rv = new TryStmt()
+    rv.setResources(filter(n.getResources, arg))
     rv.setTryBlock(filter(n.getTryBlock, arg))
     rv.setCatchs(filter(n.getCatchs, arg))
     rv.setFinallyBlock(filter(n.getFinallyBlock, arg))

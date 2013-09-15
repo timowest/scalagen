@@ -1,5 +1,9 @@
 package com.mysema.examples;
 
+import java.io.ByteArrayInputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Arrays;
 
 public class TryCatch {
@@ -68,6 +72,33 @@ public class TryCatch {
         } catch (NullPointerException n) {
             throw new RuntimeException(n);
         }
+    }
+    
+    void multiCatch() {
+    	try {
+    		System.out.println("here");
+    	} catch (Error | Exception e) {
+    		throw new RuntimeException(e);
+    	}
+    }
+    
+    void tryWithResources() throws IOException {
+    	try (InputStream in1 = makeInput();
+    	     InputStream in2 = makeInput()) {
+    		System.out.println(in1 + ", " + in2);
+    	} catch (IOException e) {
+    		
+    	} finally {
+    		System.out.println("done");
+    	}
+    	
+    	try (InputStream in = new ByteArrayInputStream(new byte[0])) {
+    		System.out.println(in);
+    	}
+    }
+    
+    FileInputStream makeInput() throws IOException {
+    	return new FileInputStream("abc.txt");
     }
 
 }
