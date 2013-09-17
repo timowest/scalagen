@@ -18,6 +18,7 @@ import japa.parser.ast.`type`.VoidType
 import japa.parser.ast.`type`.WildcardType
 import japa.parser.ast.visitor.GenericVisitor
 import java.util.{ArrayList, Collections}
+import com.mysema.scalagen.ast.BeginClosureExpr
 
 /**
  * 
@@ -346,7 +347,10 @@ abstract class ModifierVisitor[A] extends GenericVisitor[Node, A] {
     rv
   }
 
-  def visit(n: NameExpr, arg: A): Node = new NameExpr(visitName(n.getName, arg))
+  def visit(n: NameExpr, arg: A): Node = n match {
+    case closure: BeginClosureExpr => closure
+    case _ => new NameExpr(visitName(n.getName, arg))
+  }
 
   def visit(n: NormalAnnotationExpr, arg: A): Node = {
     val rv = new NormalAnnotationExpr()
