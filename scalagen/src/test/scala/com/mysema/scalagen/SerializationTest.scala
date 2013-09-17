@@ -178,6 +178,16 @@ class SerializationTest extends AbstractParserTest {
   }
 
   @Test
+  def LongLines {
+    val sources = toScala[LongLinesIncludingAVeryVeryVeryVeryVeryVeryVeryVeryVeryVeryVeryVeryVeryLongClassName](ConversionSettings(splitLongLines = false))
+    assertContains(sources, "class LongLinesIncludingAVeryVeryVeryVeryVeryVeryVeryVeryVeryVeryVeryVeryVeryLongClassName(nums: Int*) extends LongClassToExtendAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa {")
+    assertContains(sources, "var x: LongLinesIncludingAVeryVeryVeryVeryVeryVeryVeryVeryVeryVeryVeryVeryVeryLongClassName = new LongLinesIncludingAVeryVeryVeryVeryVeryVeryVeryVeryVeryVeryVeryVeryVeryLongClassName(444, 2, 3, 4, 5, 6, 7, 8, 9, 10)")
+    assertContains(sources, "def this(a: Int, b: Int, c: Int, d: Int, e: Int)")
+    assertContains(sources, """if ("very long condition ........................".length > 0 || "other long condition".length > 0)""")
+    assertContains(sources, """for (n <- aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa if "long condition goes here ........................".length > 0)""")
+  }
+
+  @Test
   def LazyInitBeanAccessor {
     val sources = toScala[LazyInitBeanAccessor]
     assertContains(sources, "lazy val value = \"XXX\"")
