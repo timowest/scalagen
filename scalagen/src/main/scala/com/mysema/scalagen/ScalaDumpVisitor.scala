@@ -25,6 +25,7 @@ import java.util.Iterator
 import java.util.List
 import org.apache.commons.lang3.StringUtils
 import japa.parser.ast.visitor.GenericVisitorAdapter
+import com.mysema.scalagen.ast.BeginClosureExpr
 
 object ScalaDumpVisitor {
 
@@ -209,14 +210,21 @@ class ScalaDumpVisitor(settings: ConversionSettings) extends VoidVisitor[ScalaDu
     if (args != null) {
       val i = args.iterator()
       while (i.hasNext) {
-        var e = i.next()
-        e.accept(this, arg)
-        if (i.hasNext) {
-          printer.print(", ")
-          if (settings.splitLongLines && printer.lineLength > NL_THRESHOLD) {
-            printer.printLn()
-            printer.print("  ")
+        i.next() match {
+          case closure: BeginClosureExpr => {
+            printer.print(closure.params + " => ")
           }
+          case e => {
+            e.accept(this, arg)
+            if (i.hasNext) {
+              printer.print(", ")
+            }
+          }
+        }
+        
+        if (i.hasNext && settings.splitLongLines && printer.lineLength > NL_THRESHOLD) {
+          printer.printLn()
+          printer.print("  ")
         }
       }
     }

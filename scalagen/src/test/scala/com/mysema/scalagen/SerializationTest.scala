@@ -192,6 +192,17 @@ class SerializationTest extends AbstractParserTest {
     val sources = toScala[LazyInitBeanAccessor]
     assertContains(sources, "lazy val value = \"XXX\"")
   }
+  
+  @Test
+  def Loop {
+    val sources = toScala[Loop]
+    assertContains(sources, """.find(_ => str.startsWith("a"))""")
+    assertContains(sources, ".map(_ => true)")
+    assertContains(sources, ".find(str.startsWith(_))")
+    assertContains(sources, ".map(_.length > 0)")
+    assertContains(sources, ".find(b => str.startsWith(b) && b.length < 10)")
+    assertContains(sources, ".map(b => b.length > 0 || b.length < 15)")
+  }
 
   @Test
   def Modifiers {
