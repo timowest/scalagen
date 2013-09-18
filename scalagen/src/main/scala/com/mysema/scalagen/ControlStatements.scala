@@ -16,6 +16,7 @@ package com.mysema.scalagen
 import japa.parser.ast.visitor._
 import java.util.ArrayList
 import UnitTransformer._
+import com.mysema.scalagen.ast.BeginClosureExpr
 
 object ControlStatements extends ControlStatements
 
@@ -34,6 +35,18 @@ class ControlStatements extends UnitTransformerBase {
     }  
   }
   
+  private def numMatchingNames(n: Node, variableName: String): Int = {
+    var matched = 0
+    val visitor = new ModifierVisitor[Null] {
+      override def visitName(n: String, dummy: Null): String = {
+        if (n == variableName) matched += 1
+        n
+      }
+    }
+    n.accept(visitor, null)
+    matched
+  }
+  
   private val toKeyAndValue = new ModifierVisitor[String] {
     override def visit(nn: MethodCall, arg: String): Node = {
       val n = super.visit(nn, arg).asInstanceOf[MethodCall]
@@ -44,6 +57,8 @@ class ControlStatements extends UnitTransformerBase {
       }
     }    
   }
+  
+  
   
   def transform(cu: CompilationUnit): CompilationUnit = {
     cu.accept(this, cu).asInstanceOf[CompilationUnit] 
@@ -110,18 +125,23 @@ class ControlStatements extends UnitTransformerBase {
     }
   }
   
+  private def createClosure(vid: String, expr: Expression): List[Expression] = numMatchingNames(expr, vid) match {
+    case 0 => List(new BeginClosureExpr("_"), expr)
+    case 1 => List(expr.accept(toUnderscore, Set(vid)).asInstanceOf[Expression])
+    case _ => List(new BeginClosureExpr(vid), expr)
+  }
+  
   private def createFindCall(it: Expression, v: VariableDeclaration, 
       cond: Expression, rv1: Expression, rv2: Expression): Statement = {
     val vid = v.getVars.get(0).getId.toString
-    val newCond = cond.accept(toUnderscore, Set(vid)).asInstanceOf[Expression]
+    val newCond = createClosure(vid, cond)
     val newIt = it match {
       case MethodCall(_, "until", _ :: Nil) => new Enclosed(it)
       case _ => it
     }
-    val findCall = new MethodCall(newIt, "find", newCond :: Nil)
+    val findCall = new MethodCall(newIt, "find", newCond)
     val expr = if (vid == rv1.toString) findCall
-               else new MethodCall(findCall, "map", 
-                          rv1.accept(toUnderscore, Set(vid)).asInstanceOf[Expression] :: Nil)  
+               else new MethodCall(findCall, "map", createClosure(vid, rv1))
     val getOrElse = new MethodCall(expr, "getOrElse", rv2 :: Nil)
     new Block(new ExpressionStmt(getOrElse) :: Nil)
   } 
