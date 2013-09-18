@@ -78,7 +78,7 @@ object ScalaDumpVisitor {
  * ScalaDumpVisitor is a serializing visitor for CompilationUnit instances
  *
  */
-class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helpers {
+class ScalaDumpVisitor(settings: ConversionSettings) extends VoidVisitor[ScalaDumpVisitor.Context] with Helpers {
   import ScalaDumpVisitor._
 
   private val printer = new SourcePrinter()
@@ -86,7 +86,7 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
   def getSource: String = printer.source
 
   private def print(node: Node, arg: Context): String = {
-    val v = new ScalaDumpVisitor()
+    val v = new ScalaDumpVisitor(settings)
     node.accept(v, arg)
     v.getSource
   }
@@ -207,13 +207,13 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
   private def printArguments(args: List[Expression], arg: Context) {
     printer.print("(")
     if (args != null) {
-      var i = args.iterator()
+      val i = args.iterator()
       while (i.hasNext) {
         var e = i.next()
         e.accept(this, arg)
         if (i.hasNext) {
           printer.print(", ")
-          if (printer.lineLength > NL_THRESHOLD) {
+          if (settings.splitLongLines && printer.lineLength > NL_THRESHOLD) {
             printer.printLn()
             printer.print("  ")
           }
@@ -366,7 +366,7 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
     if (n.getImplements != null) {
       superTypes.addAll(n.getImplements)
     }
-    if (printer.lineLength > 75) {
+    if (settings.splitLongLines && printer.lineLength > 75) {
       printer.printLn()
       printer.print("   ")
     }
@@ -638,7 +638,7 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
     }
     printer.print(symbol)
     printer.print(" ")
-    if (print(n.getLeft, arg).length > 50 || print(n.getRight, arg).length > 50) {
+    if (settings.splitLongLines && (print(n.getLeft, arg).length > 50 || print(n.getRight, arg).length > 50)) {
       printer.printLn()
       printer.print("  ")
     }
@@ -773,7 +773,7 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
     var args = if (n.getArgs == null) 0 else n.getArgs.size
     val shortForm = (SHORT_FORM.contains(n.getName) && args < 2) || (NO_ARGS_SHORT.contains(n.getName) && args == 0)
     if (n.getScope != null) {
-      val split = print(n.getScope, arg).length > 50
+      val split = settings.splitLongLines && print(n.getScope, arg).length > 50
       n.getScope.accept(this, arg)
       if (split) {
         printer.printLn()
@@ -870,8 +870,8 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
     }
     printer.print("(")
     if (n.getParameters != null) {
-      var lineBreaks = n.getParameters.size > 3
-      var i = n.getParameters.iterator()
+      val lineBreaks = settings.splitLongLines && n.getParameters.size > 3
+      val i = n.getParameters.iterator()
       while (i.hasNext) {
         i.next().accept(this, arg)
         if (i.hasNext) {
@@ -903,8 +903,8 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
     printTypeParameters(n.getTypeParameters, arg)
     printer.print("(")
     if (n.getParameters != null) {
-      var lineBreaks = n.getParameters.size > 3
-      var i = n.getParameters.iterator()
+      val lineBreaks = settings.splitLongLines && n.getParameters.size > 3
+      val i = n.getParameters.iterator()
       while (i.hasNext) {
         i.next().accept(this, arg)
         if (i.hasNext) {
@@ -1302,7 +1302,7 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
       Types.extract(body) match {
         case fe: ForeachStmt => {
           printer.print("; ")
-          if (printer.lineLength > NL_THRESHOLD) {
+          if (settings.splitLongLines && printer.lineLength > NL_THRESHOLD) {
             printer.printLn()
             printer.print("     ")
           }
@@ -1312,7 +1312,7 @@ class ScalaDumpVisitor extends VoidVisitor[ScalaDumpVisitor.Context] with Helper
           body = fe.getBody
         }
         case ifStmt: IfStmt => {
-          if (printer.lineLength > NL_THRESHOLD) {
+          if (settings.splitLongLines && printer.lineLength > NL_THRESHOLD) {
             printer.printLn()
             printer.print("   ")
           }

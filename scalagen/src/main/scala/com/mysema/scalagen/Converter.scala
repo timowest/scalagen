@@ -102,17 +102,17 @@ class Converter(encoding: String, transformers: List[UnitTransformer]) {
     }    
   }
   
-  def convert(javaSource: String): String = {
+  def convert(javaSource: String, settings: ConversionSettings = ConversionSettings()): String = {
     val compilationUnit = JavaParser.parse(new ByteArrayInputStream(javaSource.getBytes(encoding)), encoding)
-    toScala(compilationUnit)
+    toScala(compilationUnit, settings)
   }
   
-  def toScala(unit: CompilationUnit): String = {
+  def toScala(unit: CompilationUnit, settings: ConversionSettings = ConversionSettings()): String = {
     if (unit.getImports == null) {
       unit.setImports(new ArrayList[ImportDeclaration]())  
     }    
     val transformed = transformers.foldLeft(unit) { case (u,t) => t.transform(u) }    
-    var visitor = new ScalaDumpVisitor()
+    var visitor = new ScalaDumpVisitor(settings)
     transformed.accept(visitor, new ScalaDumpVisitor.Context())
     visitor.getSource
   }
