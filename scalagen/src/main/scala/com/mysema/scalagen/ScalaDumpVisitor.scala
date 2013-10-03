@@ -1077,7 +1077,7 @@ class ScalaDumpVisitor(settings: ConversionSettings) extends VoidVisitor[ScalaDu
   }
 
   def visit(n: BlockStmt, arg: Context) {
-    if (!isEmpty(n.getStmts) && n.getStmts.get(0).isInstanceOf[SwitchStmt]) {
+    if (!isEmpty(n.getStmts) && n.getStmts.size == 1 && n.getStmts.get(0).isInstanceOf[SwitchStmt]) {
       n.getStmts.get(0).accept(this, arg)
       return
     }
