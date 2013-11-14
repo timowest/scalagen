@@ -508,6 +508,9 @@ class ScalaDumpVisitor(settings: ConversionSettings) extends VoidVisitor[ScalaDu
 
       v.getId.accept(this, arg)
       if (v.getInit == null || modifier != "val ") {
+        if (v.getId.getName.endsWith("_")) {
+          printer.print(" ")
+        }
         printer.print(": ")
         n.getType.accept(this, arg)
       }
