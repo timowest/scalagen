@@ -38,3 +38,7 @@ and to convert test sources run
 
 The conversion results are to be seen as a starting point for the Java to Scala conversion. 
 Some elements are not transformed correctly for various reasons and will need manual intervention.
+
+### Development
+
+Scalagen development instructions are here https://github.com/mysema/scalagen/wiki/Scalagen-development
