@@ -20,7 +20,7 @@ import java.util.ArrayList
 object SimpleEquals extends SimpleEquals
 
 /**
- * SimpleEquals simplfies equals method implementations
+ * SimpleEquals simplifies equals method implementations
  */
 class SimpleEquals extends UnitTransformerBase {
   

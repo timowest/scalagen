@@ -21,7 +21,7 @@ import UnitTransformer._
 object BeanProperties extends BeanProperties
 
 /**
- * BeanProperties turns field + accessor combinations into @BeanPropert annotated 
+ * BeanProperties turns field + accessor combinations into @BeanProperty annotated 
  * Scala properties
  */
 class BeanProperties extends UnitTransformerBase with BeanHelpers {
