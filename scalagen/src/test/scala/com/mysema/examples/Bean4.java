@@ -19,5 +19,21 @@ public class Bean4 {
             return prop;
         }
     }
+    
+    public static class D {
+        private T1 prop;
+
+        D(T1 prop) {
+            this.prop = prop;
+        }
+
+        public void setProp(T1 prop) {
+            this.prop = prop;
+        }
+
+        public T1 getProp() {
+            return prop;
+        }
+    }
 
 }
