@@ -779,7 +779,8 @@ class ScalaDumpVisitor(settings: ConversionSettings) extends VoidVisitor[ScalaDu
   def visit(n: MethodCallExpr, arg: Context) {
     //val split = arg.split
     var args = if (n.getArgs == null) 0 else n.getArgs.size
-    val shortForm = (SHORT_FORM.contains(n.getName) && args < 2) || (NO_ARGS_SHORT.contains(n.getName) && args == 0)
+    val shortForm = ((SHORT_FORM.contains(n.getName) && args < 2 && !n.getArgs.get(0).isInstanceOf[LiteralExpr]) 
+                  || (NO_ARGS_SHORT.contains(n.getName) && args == 0))
     if (n.getScope != null) {
       val split = settings.splitLongLines && print(n.getScope, arg).length > 50
       n.getScope.accept(this, arg)
