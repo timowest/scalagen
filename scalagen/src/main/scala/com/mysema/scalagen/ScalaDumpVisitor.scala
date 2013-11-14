@@ -1091,7 +1091,7 @@ class ScalaDumpVisitor(settings: ConversionSettings) extends VoidVisitor[ScalaDu
         printer.printLn()
       }
       while (s.hasNext) {
-        val stmt = s.next
+        val stmt = s.next()
         arg.returnOn = returnOn || s.hasNext
         stmt match {
           case b: BlockStmt => b.getStmts.foreach(print)
