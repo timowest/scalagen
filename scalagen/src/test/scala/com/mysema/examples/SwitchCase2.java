@@ -8,5 +8,14 @@ public class SwitchCase2 {
             return;
         }
     }
+    
+    public String doSmthElse(int i) {
+        switch (i) {
+        case 3:
+            return "abc";
+        default:
+            return null;
+        }
+    }
 
 }

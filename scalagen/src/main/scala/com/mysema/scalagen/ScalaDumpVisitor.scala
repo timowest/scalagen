@@ -70,6 +70,7 @@ object ScalaDumpVisitor {
     var returnOn = false
     var typeArg = false
     var imports = Map[String,String]()
+    var noUnwrap = Set[Any]()
   }
 
 }
@@ -943,12 +944,15 @@ class ScalaDumpVisitor(settings: ConversionSettings) extends VoidVisitor[ScalaDu
           } else {
             n.getBody.accept(this, arg)
           }
-        } else {
+        } else {          
           n.getBody.accept(this, arg)
         }
       } else {
         printer.print(" ")
+        val origUnwrap = arg.noUnwrap
+        arg.noUnwrap = arg.noUnwrap.+(n.getBody)
         n.getBody.accept(this, arg)
+        arg.noUnwrap = origUnwrap
       }
     }
   }
@@ -1081,7 +1085,10 @@ class ScalaDumpVisitor(settings: ConversionSettings) extends VoidVisitor[ScalaDu
   }
 
   def visit(n: BlockStmt, arg: Context) {
-    if (!isEmpty(n.getStmts) && n.getStmts.size == 1 && n.getStmts.get(0).isInstanceOf[SwitchStmt]) {
+    if (!isEmpty(n.getStmts)
+     && !arg.noUnwrap.contains(n)
+     && n.getStmts.size == 1 
+     && n.getStmts.get(0).isInstanceOf[SwitchStmt]) {
       n.getStmts.get(0).accept(this, arg)
       return
     }
