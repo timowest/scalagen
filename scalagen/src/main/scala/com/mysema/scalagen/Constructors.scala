@@ -113,7 +113,6 @@ class Constructors extends UnitTransformerBase {
               replacements = replacements.+((param.getId.getName, namedTarget.getName))
               copyAnnotationsAndModifiers(field, param)
               // remove field
-              //field.getVariables.remove(variables(namedTarget.getName))
               field.setVariables(field.getVariables.filterNot(_ == variables(namedTarget.getName)))
             }
           } else { // field = ?!?

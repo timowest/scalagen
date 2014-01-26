@@ -42,11 +42,8 @@ class ScalaCompilationTest extends AbstractParserTest with CompileTestUtils {
     
     failures.foreach { case (n,m) => System.err.println(n + " => " + m)}
     
-    // known failures
-    val filtered = failures.-("Constructors3.java", "Switch.java")
-    
     assertTrue(
       failures.size + " of " + resources.size + " failures : " + failures.keys.mkString(", "), 
-      filtered.isEmpty)
+      failures.isEmpty)
   }
 }
