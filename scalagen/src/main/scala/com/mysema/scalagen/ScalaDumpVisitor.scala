@@ -1031,6 +1031,30 @@ class ScalaDumpVisitor(settings: ConversionSettings) extends VoidVisitor[ScalaDu
     }
     printArguments(n.getArgs, arg)
   }
+  
+  def isTypeInitMatch(n: VariableDeclarationExpr, v: VariableDeclarator) = {
+    import PrimitiveType.Primitive
+    val init = v.getInit
+    if (init.isInstanceOf[LiteralExpr]) {
+      n.getType match {
+        case ptype: PrimitiveType => {
+          ptype.getType match {
+            case Primitive.Boolean => init.isInstanceOf[BooleanLiteralExpr]
+            case Primitive.Byte => false
+            case Primitive.Char => init.isInstanceOf[CharLiteralExpr]
+            case Primitive.Double => init.isInstanceOf[DoubleLiteralExpr]
+            case Primitive.Float => false
+            case Primitive.Int => init.isInstanceOf[IntegerLiteralExpr]
+            case Primitive.Long => init.isInstanceOf[LongLiteralExpr]
+            case Primitive.Short => false
+          }  
+        }
+        case _ => true
+      }  
+    } else {
+      true
+    }    
+  } 
 
   def visit(n: VariableDeclarationExpr, arg: Context) {
     val asParameter = n.getModifiers == -1
@@ -1042,7 +1066,7 @@ class ScalaDumpVisitor(settings: ConversionSettings) extends VoidVisitor[ScalaDu
       if (!asParameter) {
         printer.print(modifier)
       }
-      if (v.getInit == null || v.getInit.isInstanceOf[NullLiteralExpr]){
+      if (v.getInit == null || v.getInit.isInstanceOf[NullLiteralExpr] || !isTypeInitMatch(n, v)){
         v.getId.accept(this, arg)
         printer.print(": ")
         for (i <- 0 until v.getId.getArrayCount) {
@@ -1055,8 +1079,12 @@ class ScalaDumpVisitor(settings: ConversionSettings) extends VoidVisitor[ScalaDu
         if (!asParameter) {
           printer.print(" = ")
           if (n.getType.isInstanceOf[PrimitiveType]) {
-            val ptype = n.getType.asInstanceOf[PrimitiveType]
-            printer.print(DEFAULTS(ptype.getType))
+            if (v.getInit != null) {
+              v.getInit.accept(this, arg) 
+            } else {
+              val ptype = n.getType.asInstanceOf[PrimitiveType]
+              printer.print(DEFAULTS(ptype.getType))
+            }            
           } else {
             printer.print("null")
           }
