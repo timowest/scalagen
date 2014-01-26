@@ -67,6 +67,7 @@ object Converter {
       ControlStatements, 
       CompanionObject,
       Underscores,
+      Setters,
       BeanProperties, 
       Properties,
       Constructors, 
