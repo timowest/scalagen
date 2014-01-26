@@ -856,12 +856,26 @@ class ScalaDumpVisitor(settings: ConversionSettings) extends VoidVisitor[ScalaDu
 //      case Op.preDecrement => "-= 1"
       case _ => ""
     })
+    if (n.getOperator == Op.posIncrement || n.getOperator == Op.posDecrement) {
+      printer.print("{")  
+    }        
     n.getExpr.accept(this, arg)
     printer.print(n.getOperator match {
       case Op.posIncrement => " += 1"
       case Op.posDecrement => " -= 1"
       case _ => ""
     })
+    if (n.getOperator == Op.posIncrement || n.getOperator == Op.posDecrement) {
+      printer.print("; ")
+      n.getExpr.accept(this, arg)
+      printer.print(n.getOperator match {
+        case Op.posIncrement => " - 1"
+        case Op.posDecrement => " + 1"
+        case _ => ""
+      })  
+      printer.print("}") 
+    }
+    
   }
 
   def visit(n: ConstructorDeclaration, arg: Context) {
