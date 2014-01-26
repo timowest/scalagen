@@ -91,6 +91,8 @@ class Constructors extends UnitTransformerBase {
     val variables = fields.flatMap(_.getVariables).map(v => (v.getId.getName, v)).toMap
     val variableToField = fields.flatMap(f => f.getVariables.map(v => (v.getId.getName,f)) ).toMap
 
+    var replacements = Map[String, String]()
+    
     // go through statements and map assignments to variable initializers
     c.getBlock.getStmts.collect { case s: ExpressionStmt => s }
       .filter(isAssignment(_))
@@ -108,6 +110,7 @@ class Constructors extends UnitTransformerBase {
               val field = variableToField(namedTarget.getName)
               // rename parameter to field name
               param.setId(namedTarget.getName)
+              replacements = replacements.+((param.getId.getName, namedTarget.getName))
               copyAnnotationsAndModifiers(field, param)
               // remove field
               //field.getVariables.remove(variables(namedTarget.getName))
@@ -123,6 +126,16 @@ class Constructors extends UnitTransformerBase {
 
     // remove empty field declarations
     fields.filter(_.getVariables.isEmpty).foreach { t.getMembers.remove(_) }
+    
+    // modify variables in other statements
+    val renameTransformer = new RenameTransformer(replacements)
+    c.getBlock.setStmts(c.getBlock.getStmts.map(stmt => {
+      if (!stmt.isInstanceOf[ExpressionStmt]) {
+        stmt.accept(renameTransformer, cu).asInstanceOf[Statement]
+      } else {
+        stmt
+      }
+    }))
 
   }
 
