@@ -34,9 +34,9 @@ class Annotations(targetVersion: ScalaVersion) extends UnitTransformerBase {
     
   override def visit(n: AnnotationDecl, arg: CompilationUnit) = {
     // turns annotations into StaticAnnotation subclasses
-    if (targetVersion == Scala210) {
+    if (targetVersion >= Scala210) {
       //StaticAnnotation was in the "scala" package in 2.9, so it was imported by default
-      //in scala 2.10, it was moved to the scala.annotation package, so we need an explicit import
+      //in scala 2.10+, it was moved to the scala.annotation package, so we need an explicit import
       arg.getImports().add(new ImportDeclaration(new NameExpr("scala.annotation.StaticAnnotation"), false, false))
     }
     val clazz = new ClassOrInterfaceDecl()

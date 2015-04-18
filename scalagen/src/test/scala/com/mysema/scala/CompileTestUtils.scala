@@ -1,5 +1,6 @@
 package com.mysema.scala
 
+import com.mysema.scalagen.{ Scala210, ScalaVersion }
 import scala.tools.nsc._
 import scala.io.Source.fromFile
 import java.io.File
@@ -8,7 +9,10 @@ object CompileTestUtils {
   import java.io.File.pathSeparator
 
   val currentLibraries = (this.getClass.getClassLoader).asInstanceOf[java.net.URLClassLoader].getURLs().toList
-  val cp = jarPathOfClass("scala.tools.nsc.Interpreter") :: jarPathOfClass("scala.ScalaObject") :: currentLibraries
+  val cp = (jarPathOfClass("scala.tools.nsc.Interpreter") ::
+    //scala.ScalaObject was a marker trait used up to 2.10
+    (if (ScalaVersion.current <= Scala210) jarPathOfClass("scala.ScalaObject") else "") :: 
+    currentLibraries)
   val cpString = cp.mkString(pathSeparator)
      
   private def jarPathOfClass(className: String) = {

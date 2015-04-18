@@ -18,13 +18,15 @@ import java.util.ArrayList
 import com.mysema.scala.BeanUtils
 import UnitTransformer._
 
-object BeanProperties extends BeanProperties
-
 /**
  * BeanProperties turns field + accessor combinations into @BeanProperty annotated 
  * Scala properties
  */
-class BeanProperties extends UnitTransformerBase with BeanHelpers {
+class BeanProperties(targetVersion: ScalaVersion) extends UnitTransformerBase with BeanHelpers {
+  
+  val BEAN_PROPERTY_IMPORT =
+    if (targetVersion >= Scala210) new Import("scala.beans.{BeanProperty, BooleanBeanProperty}", false, false)
+    else new Import("scala.reflect.{BeanProperty, BooleanBeanProperty}", false, false)
      
   def transform(cu: CompilationUnit): CompilationUnit = {
     cu.accept(this, cu).asInstanceOf[CompilationUnit] 
