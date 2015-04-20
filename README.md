@@ -42,3 +42,20 @@ Some elements are not transformed correctly for various reasons and will need ma
 ### Development
 
 Scalagen development instructions are here https://github.com/mysema/scalagen/wiki/Scalagen-development
+
+#### Building
+
+To create the jar run
+
+    mvn -Pscala-2.11.x clean package
+
+To import the project in to eclipse run
+
+    mvn -Pscala-2.11.x eclipse:eclipse
+
+The maven profiles (the part after the `-P`) can be:
+
+ * `scala-2.11.x`
+ * `scala-2.10.x`
+ * `scala-2.9.x`
+

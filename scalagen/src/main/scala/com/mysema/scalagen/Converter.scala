@@ -21,7 +21,6 @@ import java.util.ArrayList
 import japa.parser.ParseException
 import java.io.ByteArrayInputStream
 import java.util.regex.Pattern
-import scala.util.{Properties => ScalaProperties}
 
 object Converter {
   
@@ -40,18 +39,22 @@ object Converter {
    */
   lazy val instance210 = createConverter(Scala210)
   
+  /**
+   * Converter targeting scala 2.11
+   */
+  lazy val instance211 = createConverter(Scala211)
+  
   def getInstance(version: ScalaVersion) = version match {
     case Scala29 => instance29
     case Scala210 => instance210
+    case Scala211 => instance211
   }
   
   /**
    * Converter for the current runtime scala version
    */
   def getInstance(): Converter = {
-    //we can't use ScalaProperties.scalaVersionNumber because it's new in 2.10
-    val scalaVersionNumber = ScalaProperties.versionString.drop("version ".length)
-    getInstance(ScalaVersion.getVersion(scalaVersionNumber))
+    getInstance(ScalaVersion.current)
   }
   
   private def createConverter(version: ScalaVersion) = {
@@ -68,7 +71,7 @@ object Converter {
       CompanionObject,
       Underscores,
       Setters,
-      BeanProperties, 
+      new BeanProperties(version), 
       Properties,
       Constructors, 
       Initializers,
