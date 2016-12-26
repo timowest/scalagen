@@ -1,22 +1,17 @@
 package com.mysema.scalagen
 
-import japa.parser.ast.BlockComment
-import japa.parser.ast.CompilationUnit
-import japa.parser.ast.ImportDeclaration
-import japa.parser.ast.LineComment
-import japa.parser.ast.Node
-import japa.parser.ast.PackageDeclaration
-import japa.parser.ast.TypeParameter
-import japa.parser.ast.body._
-import japa.parser.ast.expr._
-import japa.parser.ast.stmt._
-import japa.parser.ast.`type`.ClassOrInterfaceType
-import japa.parser.ast.`type`.PrimitiveType
-import japa.parser.ast.`type`.ReferenceType
-import japa.parser.ast.`type`.Type
-import japa.parser.ast.`type`.VoidType
-import japa.parser.ast.`type`.WildcardType
-import japa.parser.ast.visitor.GenericVisitor
+import com.github.javaparser.ast.CompilationUnit
+import com.github.javaparser.ast.DocumentableNode
+import com.github.javaparser.ast.ImportDeclaration
+import com.github.javaparser.ast.Node
+import com.github.javaparser.ast.PackageDeclaration
+import com.github.javaparser.ast.TypeParameter
+import com.github.javaparser.ast.body._
+import com.github.javaparser.ast.comments._
+import com.github.javaparser.ast.expr._
+import com.github.javaparser.ast.stmt._
+import com.github.javaparser.ast.`type`._
+import com.github.javaparser.ast.visitor.GenericVisitor
 import java.util.{ArrayList, Collections}
 import com.mysema.scalagen.ast.BeginClosureExpr
 
@@ -51,7 +46,7 @@ abstract class ModifierVisitor[A] extends GenericVisitor[Node, A] {
   def visit(n: AnnotationDeclaration, arg: A) : Node = {
     val rv = new AnnotationDeclaration()
     rv.setAnnotations(filter(n.getAnnotations, arg))
-    rv.setJavaDoc(filter(n.getJavaDoc, arg))    
+    rv.setComment(javadocFor(n, arg))
     rv.setMembers(filter(n.getMembers, arg))
     rv.setModifiers(n.getModifiers)
     rv.setName(n.getName)
@@ -62,7 +57,7 @@ abstract class ModifierVisitor[A] extends GenericVisitor[Node, A] {
     val rv = new AnnotationMemberDeclaration()
     rv.setAnnotations(filter(n.getAnnotations, arg))
     rv.setDefaultValue(filter(n.getDefaultValue, arg))
-    rv.setJavaDoc(filter(n.getJavaDoc, arg))
+    rv.setComment(javadocFor(n, arg))
     rv.setModifiers(n.getModifiers)
     rv.setName(n.getName)
     rv.setType(filter(n.getType, arg))
@@ -126,7 +121,7 @@ abstract class ModifierVisitor[A] extends GenericVisitor[Node, A] {
   }
 
   def visit(n: CatchClause, arg: A): Node = {
-    new CatchClause(filter(n.getExcept, arg), filter(n.getCatchBlock, arg))
+    new CatchClause(filter(n.getParam, arg), filter(n.getCatchBlock, arg))
   }
 
   def visit(n: CharLiteralExpr, arg: A): Node = new CharLiteralExpr(n.getValue)
@@ -139,12 +134,20 @@ abstract class ModifierVisitor[A] extends GenericVisitor[Node, A] {
     rv.setExtends(filter(n.getExtends, arg))
     rv.setImplements(filter(n.getImplements, arg))
     rv.setInterface(n.isInterface)
-    rv.setJavaDoc(filter(n.getJavaDoc, arg))
+    rv.setComment(javadocFor(n, arg))
     rv.setMembers(filter(n.getMembers, arg))
     rv.setModifiers(n.getModifiers)
     rv.setName(n.getName)
     rv.setTypeParameters(filter(n.getTypeParameters, arg))        
     rv
+  }
+
+  private def javadocFor(n: DocumentableNode, arg: A) = {
+    val filtered = filter(n.getJavaDoc, arg)
+    if (filtered == null)
+      null
+    else
+      new JavadocComment(filtered.getContent)
   }
 
   def visit(n: ClassOrInterfaceType, arg: A): Node = {
@@ -175,7 +178,7 @@ abstract class ModifierVisitor[A] extends GenericVisitor[Node, A] {
     val rv = new ConstructorDeclaration()
     rv.setAnnotations(filter(n.getAnnotations, arg))
     rv.setBlock(filter(n.getBlock, arg))
-    rv.setJavaDoc(filter(n.getJavaDoc, arg))
+    rv.setComment(javadocFor(n, arg))
     rv.setModifiers(n.getModifiers)
     rv.setName(n.getName)
     rv.setParameters(filter(n.getParameters, arg))
@@ -196,13 +199,17 @@ abstract class ModifierVisitor[A] extends GenericVisitor[Node, A] {
   def visit(n: DoubleLiteralExpr, arg: A): Node = new DoubleLiteralExpr(n.getValue)
 
   def visit(n: EmptyMemberDeclaration, arg: A): Node = {
-    new EmptyMemberDeclaration(filter(n.getJavaDoc, arg))
+    val em = new EmptyMemberDeclaration()
+    em.setComment(javadocFor(n, arg))
+    em
   }
 
   def visit(n: EmptyStmt, arg: A): Node = new EmptyStmt()
 
   def visit(n: EmptyTypeDeclaration, arg: A): Node = {
-    new EmptyTypeDeclaration(filter(n.getJavaDoc, arg))
+    val em = new EmptyTypeDeclaration()
+    em.setComment(javadocFor(n, arg))
+    em
   }
 
   def visit(n: EnclosedExpr, arg: A): Node = {
@@ -214,7 +221,7 @@ abstract class ModifierVisitor[A] extends GenericVisitor[Node, A] {
     rv.setAnnotations(filter(n.getAnnotations, arg))
     rv.setArgs(filter(n.getArgs, arg))
     rv.setClassBody(filter(n.getClassBody, arg))
-    rv.setJavaDoc(filter(n.getJavaDoc, arg))
+    rv.setComment(javadocFor(n, arg))
     rv.setName(n.getName)
     rv
   }
@@ -224,7 +231,7 @@ abstract class ModifierVisitor[A] extends GenericVisitor[Node, A] {
     rv.setAnnotations(filter(n.getAnnotations, arg))
     rv.setEntries(filter(n.getEntries, arg))
     rv.setImplements(filter(n.getImplements, arg))
-    rv.setJavaDoc(filter(n.getJavaDoc, arg))
+    rv.setComment(javadocFor(n, arg))
     rv.setMembers(filter(n.getMembers, arg))
     rv.setModifiers(n.getModifiers)
     rv.setName(n.getName)    
@@ -251,7 +258,7 @@ abstract class ModifierVisitor[A] extends GenericVisitor[Node, A] {
   def visit(n: FieldDeclaration, arg: A): Node = {
     val rv = new FieldDeclaration()
     rv.setAnnotations(filter(n.getAnnotations, arg))
-    rv.setJavaDoc(filter(n.getJavaDoc, arg))
+    rv.setComment(javadocFor(n, arg))
     rv.setModifiers(n.getModifiers)
     rv.setType(filter(n.getType, arg))
     rv.setVariables(filter(n.getVariables, arg))
@@ -291,7 +298,7 @@ abstract class ModifierVisitor[A] extends GenericVisitor[Node, A] {
     val rv = new InitializerDeclaration()
     rv.setAnnotations(filter(n.getAnnotations, arg))
     rv.setBlock(filter(n.getBlock, arg))
-    rv.setJavaDoc(filter(n.getJavaDoc, arg))    
+    rv.setComment(javadocFor(n, arg))
     rv.setStatic(n.isStatic)
     rv
   }
@@ -337,7 +344,7 @@ abstract class ModifierVisitor[A] extends GenericVisitor[Node, A] {
     rv.setAnnotations(filter(n.getAnnotations, arg))
     rv.setArrayCount(n.getArrayCount)
     rv.setBody(filter(n.getBody, arg))
-    rv.setJavaDoc(filter(n.getJavaDoc, arg))
+    rv.setComment(javadocFor(n, arg))
     rv.setModifiers(n.getModifiers)
     rv.setName(n.getName)
     rv.setParameters(filter(n.getParameters, arg))
@@ -385,11 +392,11 @@ abstract class ModifierVisitor[A] extends GenericVisitor[Node, A] {
     rv.setVarArgs(n.isVarArgs)
     rv
   }
-  
+
   def visit(n: MultiTypeParameter, arg: A): Node = {
     val rv = new MultiTypeParameter()
     visit(n, rv, arg)
-    rv.setTypes(n.getTypes().map(tpe => filter(tpe, arg)))
+    rv.setType(new UnionType(n.getType().getElements.map(tpe => filter(tpe, arg))))
     rv
   }
 
@@ -516,5 +523,12 @@ abstract class ModifierVisitor[A] extends GenericVisitor[Node, A] {
   def visit(n: BlockComment, arg: A): Node = new BlockComment(n.getContent)
 
   def visit(n: LineComment, arg: A): Node = new LineComment(n.getContent)
-  
+
+  def visit(x: TypeExpr,y: A): Node = ???
+  def visit(x: MethodReferenceExpr,y: A): Node = ???
+  def visit(x: LambdaExpr,y: A): Node = ???
+  def visit(x: UnknownType,y: A): Node = ???
+  def visit(x: UnionType,y: A): Node = ???
+  def visit(x: IntersectionType,y: A): Node = ???
+
 }

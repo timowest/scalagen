@@ -15,7 +15,7 @@ package com.mysema.scalagen
 
 import java.util.ArrayList
 import UnitTransformer._
-import japa.parser.ast.expr._
+import com.github.javaparser.ast.expr._
 
 object Primitives extends Primitives
 

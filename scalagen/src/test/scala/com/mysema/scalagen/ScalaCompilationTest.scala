@@ -17,7 +17,7 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.IOException
 import org.junit.Test
-import japa.parser.JavaParser
+import com.github.javaparser.JavaParser
 import com.mysema.scala.CompileTestUtils
 import org.junit.Assert._
 import TestDirectoryStructure._

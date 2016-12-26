@@ -13,7 +13,7 @@
  */
 package com.mysema.scalagen
 
-import japa.parser.ast.body.ModifierSet
+import com.github.javaparser.ast.body.ModifierSet
 import java.util.ArrayList
 import UnitTransformer._
 

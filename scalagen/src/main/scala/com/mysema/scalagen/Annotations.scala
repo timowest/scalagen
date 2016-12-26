@@ -13,11 +13,11 @@
  */
 package com.mysema.scalagen
 
-import japa.parser.ast.visitor._
+import com.github.javaparser.ast.visitor._
 import java.util.ArrayList
-import japa.parser.ast.ImportDeclaration
-import japa.parser.ast.expr.NameExpr
-import japa.parser.ast.visitor.ModifierVisitorAdapter
+import com.github.javaparser.ast.ImportDeclaration
+import com.github.javaparser.ast.expr.NameExpr
+import com.github.javaparser.ast.visitor.ModifierVisitorAdapter
 import UnitTransformer._
 
 /**

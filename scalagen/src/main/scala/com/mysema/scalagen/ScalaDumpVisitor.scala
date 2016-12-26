@@ -13,18 +13,19 @@
  */
 package com.mysema.scalagen
 
-import japa.parser.ast._
-import japa.parser.ast.body._
-import japa.parser.ast.expr._
-import japa.parser.ast.stmt._
-import japa.parser.ast.`type`._
-import japa.parser.ast.visitor.VoidVisitor
+import com.github.javaparser.ast._
+import com.github.javaparser.ast.body._
+import com.github.javaparser.ast.comments._
+import com.github.javaparser.ast.expr._
+import com.github.javaparser.ast.stmt._
+import com.github.javaparser.ast.`type`._
+import com.github.javaparser.ast.visitor.VoidVisitor
 import java.util.ArrayList
 import java.util.HashMap
 import java.util.Iterator
 import java.util.List
 import org.apache.commons.lang3.StringUtils
-import japa.parser.ast.visitor.GenericVisitorAdapter
+import com.github.javaparser.ast.visitor.GenericVisitorAdapter
 import com.mysema.scalagen.ast.BeginClosureExpr
 
 object ScalaDumpVisitor {
@@ -192,7 +193,7 @@ class ScalaDumpVisitor(settings: ConversionSettings) extends VoidVisitor[ScalaDu
   }
 
   private def printTypeParameters(args: List[TypeParameter], arg: Context) {
-    if (args != null) {
+    if (args != null && !args.isEmpty) {
       printer.print("[")
       var i = args.iterator()
       while (i.hasNext) {
@@ -454,7 +455,7 @@ class ScalaDumpVisitor(settings: ConversionSettings) extends VoidVisitor[ScalaDu
 
   def visit(n: TypeParameter, arg: Context) {
     printer.print(n.getName)
-    if (n.getTypeBound != null) {
+    if (n.getTypeBound != null && n.getTypeBound.size() > 0) {
       printer.print(" <: ")
       var i = n.getTypeBound.iterator()
       while (i.hasNext) {
@@ -574,7 +575,7 @@ class ScalaDumpVisitor(settings: ConversionSettings) extends VoidVisitor[ScalaDu
   }
 
   def visit(n: ArrayCreationExpr, arg: Context) {
-    if (n.getDimensions != null) {
+    if (n.getDimensions != null && !n.getDimensions.isEmpty) {
 
       if (arg.assignType != null) {
         printer.print("new ")
@@ -990,7 +991,7 @@ class ScalaDumpVisitor(settings: ConversionSettings) extends VoidVisitor[ScalaDu
       printer.print("*")
     }
   }
-  
+
   def visit(n: MultiTypeParameter, arg: Context) {
     printAnnotations(n.getAnnotations, arg)
     printModifiers(n.getModifiers)
@@ -999,7 +1000,7 @@ class ScalaDumpVisitor(settings: ConversionSettings) extends VoidVisitor[ScalaDu
     }
     n.getId.accept(this, arg)
 
-    n.getTypes.toList match {
+    n.getType.getElements.toList match {
       case tpe :: Nil =>
         printer.print(": ")
         tpe.accept(this, arg)
@@ -1203,8 +1204,8 @@ class ScalaDumpVisitor(settings: ConversionSettings) extends VoidVisitor[ScalaDu
         printer.print("_")
       }
     }
-    arg.skip = n.getStmts == null
-    if (n.getStmts != null) {
+    arg.skip = n.getStmts == null || n.getStmts.size() == 0
+    if (!arg.skip) {
       printer.print(" => ")
       if (n.getStmts.size == 1) {
         n.getStmts.get(0).accept(this, arg)
@@ -1497,7 +1498,7 @@ class ScalaDumpVisitor(settings: ConversionSettings) extends VoidVisitor[ScalaDu
       n.getTryBlock.accept(this, arg)
     }
 
-    if (n.getCatchs != null) {
+    if (n.getCatchs != null && !n.getCatchs.isEmpty) {
       printer.printLn(" catch {")
       printer.indent()
       for (c <- n.getCatchs) {
@@ -1514,7 +1515,7 @@ class ScalaDumpVisitor(settings: ConversionSettings) extends VoidVisitor[ScalaDu
 
   def visit(n: CatchClause, arg: Context) {
     printer.print("case ")
-    n.getExcept.accept(this, arg)
+    n.getParam.accept(this, arg)
     printer.print(" => ")
     if (n.getCatchBlock.getStmts != null) {
       if (n.getCatchBlock.getStmts.size == 1) {
@@ -1535,7 +1536,7 @@ class ScalaDumpVisitor(settings: ConversionSettings) extends VoidVisitor[ScalaDu
     printer.print(n.getName)
     printer.printLn(" {")
     printer.indent()
-    if (n.getMembers != null) {
+    if (n.getMembers != null && !n.getMembers.isEmpty) {
       printMembers(n.getMembers, arg)
     }
     printer.unindent()
@@ -1601,4 +1602,11 @@ class ScalaDumpVisitor(settings: ConversionSettings) extends VoidVisitor[ScalaDu
     printer.print(n.getContent)
     printer.printLn("*/")
   }
+
+  def visit(x: TypeExpr,y: Context): Unit = ???
+  def visit(x: MethodReferenceExpr,y: Context): Unit = ???
+  def visit(x: LambdaExpr,y: Context): Unit = ???
+  def visit(x: UnknownType,y: Context): Unit = ???
+  def visit(x: UnionType,y: Context): Unit = ???
+  def visit(x: IntersectionType,y: Context): Unit = ???
 }

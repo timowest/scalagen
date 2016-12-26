@@ -14,7 +14,7 @@
 package com.mysema.scalagen
 
 import java.lang.reflect.Modifier
-import japa.parser.ast.body.ModifierSet
+import com.github.javaparser.ast.body.ModifierSet
 import _root_.scala.collection.JavaConversions
 import _root_.scala.collection.Set
 import java.util.ArrayList

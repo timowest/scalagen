@@ -18,7 +18,7 @@ import java.io.FileInputStream
 import java.io.IOException
 import org.junit.{ Test, Ignore }
 import org.junit.Assert._
-import japa.parser.JavaParser
+import com.github.javaparser.JavaParser
 import com.mysema.examples._
 
 class SerializationTest extends AbstractParserTest {
