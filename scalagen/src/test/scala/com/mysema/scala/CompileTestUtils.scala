@@ -35,7 +35,8 @@ trait CompileTestUtils {
     
     val env = new Settings()
     env.classpath.value = cpString
-    env.usejavacp.value = true
+    // The next line causes a problem like this "class StringContext does not have a member f"
+    // env.usejavacp.value = true
 
     val interpreter = new Interpreter(env, interpreterWriter)
     try {
