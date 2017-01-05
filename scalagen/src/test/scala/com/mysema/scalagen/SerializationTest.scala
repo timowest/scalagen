@@ -24,7 +24,7 @@ import com.mysema.examples._
 class SerializationTest extends AbstractParserTest {
 
   private def assertContains(str: String, strings: String*) {
-    strings.foreach { s => assertTrue(s + " was not found", str.contains(s)) }
+    strings.foreach { s => assertTrue(s"$s was not found in$str", str.contains(s)) }
   }
 
   @Test
@@ -123,7 +123,7 @@ class SerializationTest extends AbstractParserTest {
   @Test
   def Dao {
     val sources = toScala[IDao[_,_]]
-    assertContains(sources, "trait IDao[Entity, Id <: Serializable] {")
+    assertContains(sources, "trait IDao[Entity, Id <: Serializable]")
   }
 
   @Test

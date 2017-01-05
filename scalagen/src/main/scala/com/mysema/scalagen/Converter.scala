@@ -114,10 +114,9 @@ class Converter(encoding: String, transformers: List[UnitTransformer]) {
     if (unit.getImports == null) {
       unit.setImports(new ArrayList[ImportDeclaration]())  
     }    
-    val transformed = transformers.foldLeft(unit) { case (u,t) => t.transform(u) }    
-    var visitor = new ScalaDumpVisitor(settings)
-    transformed.accept(visitor, new ScalaDumpVisitor.Context())
-    visitor.getSource
+    val transformed = transformers.foldLeft(unit) { case (u,t) => t.transform(u) }
+    val visitor = new ScalaStringVisitor(settings)
+    transformed.accept(visitor, new ScalaStringVisitor.Context())
   }
   
   private def toOut(inFolderLength: Int, outFolder: File, in: File): File = {
