@@ -33,7 +33,14 @@ trait Types {
   def extract(stmt: Statement): Statement = stmt match {
     case b: Block => if (b.getStmts != null && b.getStmts.size == 1) b.getStmts.get(0) else b
     case _ => stmt
-  } 
+  }
+
+  object MaybeInBlock {
+    def unapplySeq(statement: Statement): Option[Seq[Statement]] = statement match {
+      case b: Block if (b.getStmts != null) => Some(b.getStmts)
+      case s => Some(Seq(s))
+    }
+  }
     
   //private def safeToString(obj: AnyRef): String = if (obj != null) obj.toString else null
   

@@ -19,17 +19,15 @@ import com.github.javaparser.ast.comments._
 import com.github.javaparser.ast.expr._
 import com.github.javaparser.ast.stmt._
 import com.github.javaparser.ast.`type`._
-import com.github.javaparser.ast.visitor.{GenericVisitor, GenericVisitorAdapter, VoidVisitor}
-import java.util.ArrayList
-import java.util.HashMap
-import java.util.Iterator
+import com.github.javaparser.ast.visitor.{GenericVisitor, GenericVisitorAdapter}
 import java.util.List
 
+import com.mysema.scalagen.Types.MaybeInBlock
+
+import scala.collection.JavaConverters._
 import org.apache.commons.lang3.StringUtils
 import com.mysema.scalagen.ast.BeginClosureExpr
 object ScalaStringVisitor {
-  private val NL_THRESHOLD = 100
-
   private val PARAMETRIZED = Set("Class","Comparable","Enum","Iterable")
 
   private val UTIL_PARAMETRIZED = Set("Collection","List","Set","Map")
@@ -59,16 +57,15 @@ object ScalaStringVisitor {
       PrimitiveType.Primitive.Long -> "0l",
       PrimitiveType.Primitive.Short -> "0.0")
   case class Context(
-    var arrayAccess: Boolean = false,
-    var classOf: Boolean = false,
-    var label: String = null,
+    val arrayAccess: Boolean = false,
+    val classOf: Boolean = false,
     var skip: Boolean = false,
-    var assignType: Type = null,
-    var inObjectEquals: Boolean = false,
-    var returnOn: Boolean = false,
-    var typeArg: Boolean = false,
-    var imports: Map[String, String] = Map[String, String](),
-    var noUnwrap: Set[Any] = Set[Any]()
+    val assignType: Type = null,
+    val inObjectEquals: Boolean = false,
+    val returnOn: Boolean = false,
+    val typeArg: Boolean = false,
+    val imports: Map[String, String] = Map[String, String](),
+    val mustWrap: Boolean = false
   )
 }
 
@@ -87,201 +84,105 @@ class ScalaStringVisitor(settings: ConversionSettings) extends GenericVisitor[St
   private def methodModifiersString(m: Int): String = {
     modifiersString(ModifierSet.removeModifier(m, ModifierSet.ABSTRACT))
   }
-
+  private val modifierMatchings: Seq[(RichModifiers => Boolean, String)] = Seq[(RichModifiers => Boolean, String)](
+    (_.isTransient, "@transient"),
+    (_.isVolatile, "@volatile"),
+    (_.isPrivate, "private"),
+    (_.isProtected, "protected"),
+    (_.isLazy, "lazy"),
+    (_.isImplicit, "implicit"),
+    (_.isAbstract, "abstract"),
+    //(_.isStatic, ""),
+    //(_.isFinal, ""),
+    (_.isNative, "/* native */"),
+    (_.isStrictfp, "/* strictfp */"),
+    (_.isSynchronized, "/* synchronized */")
+  )
   private def modifiersString(m: Int): String = {
-    val printer = new SourcePrinter()
     val modifiers: RichModifiers = new RichModifiers(m)
-    if (modifiers.isTransient) {
-      printer.print("@transient ")
-    }
-    if (modifiers.isVolatile) {
-      printer.print("@volatile ")
-    }
-
-    if (modifiers.isPrivate) {
-      printer.print("private ")
-    } else if (modifiers.isProtected) {
-      printer.print("protected ")
-    } else if (modifiers.isPublic) {
-    }
-
-    if (modifiers.isLazy) {
-      printer.print("lazy ")
-    }
-
-    if (modifiers.isImplicit) {
-      printer.print("implicit ")
-    }
-
-    if (modifiers.isAbstract) {
-      printer.print("abstract ")
-    }
-    if (modifiers.isStatic) {
-      // skip
-    }
-    if (modifiers.isFinal) {
-      // skip
-    }
-    if (modifiers.isNative) {
-      printer.print("/* native */ ")
-    }
-    if (modifiers.isStrictfp) {
-      printer.print("/* strictfp */ ")
-    }
-    if (modifiers.isSynchronized) {
-      printer.print("/* synchronized */ ")
-    }
-    printer.source
+    val matchingModifiers = modifierMatchings.flatMap { case (predicate, string) => if (predicate(modifiers)) Some(string) else None }
+    if (matchingModifiers.isEmpty) "" else matchingModifiers.mkString(" ") + " "
   }
 
-  private def membersString(members: List[BodyDeclaration], arg: Context): String = {
-    val printer = new SourcePrinter()
-    for (member <- members) {
-      printer.printLn()
-      printer.print(member.accept(this, arg))
-      printer.printLn()
-    }
-    printer.source
-  }
+  private def membersString(members: List[BodyDeclaration], arg: Context): String =
+    members.map(member => s"\n${member.accept(this, arg)}\n").mkString
 
   private def memberAnnotationsString(annotations: List[AnnotationExpr], arg: Context): (String, Boolean) = {
-    val printer = new SourcePrinter()
-    var hasOverride = false
-    if (annotations != null) {
-      for (a <- annotations) {
+    Option(annotations.asScala).toList.flatten.foldLeft(("", false)) { case ((str, hasOverride), a) =>
         if (!SKIPPED_ANNOTATIONS.contains(a.getName.getName)) {
-          printer.print(a.accept(this, arg))
-          printer.printLn()
+          (str + a.accept(this, arg) + "\n", hasOverride)
         } else {
-          hasOverride |= a.getName.getName == "Override"
+          (str, hasOverride || a.getName.getName == "Override")
         }
-      }
     }
-    (printer.source, hasOverride)
   }
 
   private def annotationsString(annotations: List[AnnotationExpr], arg: Context): String = {
-    val printer = new SourcePrinter()
-    if (annotations != null) {
-      for (a <- annotations; if !SKIPPED_ANNOTATIONS.contains(a.getName.getName)) {
-        printer.print(a.accept(this, arg))
-        printer.print(" ")
-      }
-    }
-    printer.source
+    val matchingAnnotations = Option(annotations).toList.flatten.filter(
+      a => !SKIPPED_ANNOTATIONS.contains(a.getName.getName)
+    ).map(_.accept(this, arg))
+    if (matchingAnnotations.isEmpty) "" else matchingAnnotations.mkString(" ") + " "
   }
 
   private def typeArgsString(args: List[Type], arg: Context): String = {
-    val printer = new SourcePrinter()
     if (args != null && !args.isEmpty) {
-      val typeArg = arg.typeArg
-      arg.typeArg = true
-      printer.print("[")
-      var i = args.iterator()
-      while (i.hasNext) {
-        var t = i.next()
-        printer.print(t.accept(this, arg))
-        if (i.hasNext) {
-          printer.print(", ")
-        }
-      }
-      printer.print("]")
-      arg.typeArg = typeArg
-    }
-    printer.source
-  }
-
-  private def typeParametersString(args: List[TypeParameter], arg: Context): String = {
-    val printer = new SourcePrinter()
-    if (args != null && !args.isEmpty) {
-      printer.print("[")
-      var i = args.iterator()
-      while (i.hasNext) {
-        var t = i.next()
-        printer.print(t.accept(this, arg))
-        if (i.hasNext) {
-          printer.print(", ")
-        }
-      }
-      printer.print("]")
-    }
-    printer.source
-  }
-
-  private def argumentsString(args: List[Expression], arg: Context): String = {
-    val printer = new SourcePrinter()
-    printer.print("(")
-    if (args != null) {
-      val i = args.iterator()
-      while (i.hasNext) {
-        i.next() match {
-          case closure: BeginClosureExpr =>
-            printer.print(closure.params + " => ")
-          case e =>
-            printer.print(e.accept(this, arg))
-            if (i.hasNext) {
-              printer.print(", ")
-            }
-        }
-        
-        if (i.hasNext && settings.splitLongLines && printer.lineLength > NL_THRESHOLD) {
-          printer.printLn()
-          printer.print("  ")
-        }
-      }
-    }
-    printer.print(")")
-    printer.source
-  }
-
-  private def javadocString(javadoc: JavadocComment, arg: Context): String = {
-    if (javadoc != null) {
-      javadoc.accept(this, arg)
+      args.map(_.accept(this, arg.copy(typeArg = true))).mkString("[", ", ", "]")
     } else {
       ""
     }
   }
 
-  def visit(n: CompilationUnit, arg: Context): String = {
-    val printer = new SourcePrinter()
-    if (n.getPackage != null) {
-      printer.print(n.getPackage.accept(this, arg))
+  private def typeParametersString(args: List[TypeParameter], arg: Context): String = {
+    if (args != null && !args.isEmpty) {
+      args.map(_.accept(this, arg)).mkString("[", ", ", "]")
+    } else {
+      ""
     }
-    for (i <- n.getImports) {
-      printer.print(i.accept(this, arg))
-    }
+  }
 
-    arg.imports = n.getImports
-      .filter(i => !i.isAsterisk && !i.isStatic)
-      .map(i => split(i.getName).swap).toMap
-
-    printer.printLn("//remove if not needed")
-    printer.printLn("import scala.collection.JavaConversions._")
-    if (hasTryWithResources(n)) {
-      printer.printLn("import resource._ //use scala-arm from http://jsuereth.com/scala-arm/")
-    }
-    printer.printLn()
-    
-    if (n.getPackage != null && !isEmpty(n.getPackage.getAnnotations)) {
-      printer.print(memberAnnotationsString(n.getPackage.getAnnotations, arg)._1)
-      printer.printLn("package object " + split(n.getPackage.getName)._2 + " {")
-      printer.printLn("}")
-      printer.printLn()
-    }
-
-    if (n.getTypes != null) {
-      var i = n.getTypes.iterator()
-      while (i.hasNext) {
-        printer.print(i.next().accept(this, arg))
-        printer.printLn()
-        if (i.hasNext) {
-          printer.printLn()
-        }
+  private def argumentsString(args: List[Expression], arg: Context): String = {
+    Option(args.asScala).toList.flatten.map { e =>
+      e match {
+        case closure: BeginClosureExpr => closure.params + " => "
+        case e => e.accept(this, arg)
       }
-    }
+    }.mkString("(", ", ", ")").replaceAll("=> , ", "=> ")
+  }
 
-    arg.imports = Map[String,String]()
-    printer.source
+  private def javadocString(javadoc: JavadocComment, arg: Context): String =
+    Option(javadoc).map(_.accept(this, arg)).getOrElse("")
+
+  def visit(n: CompilationUnit, arg: Context): String = {
+    val packageString = Option(n.getPackage).map(_.accept(this, arg)).getOrElse("")
+    val importsString = (n.getImports.map(_.accept(this, arg)) ++ Seq(
+      "//remove if not needed",
+      "import scala.collection.JavaConversions._"
+    ) ++ (if (hasTryWithResources(n)) {
+      Seq("import resource._ //use scala-arm from http://jsuereth.com/scala-arm/")
+    } else
+      Seq()
+      )
+      ).mkString("\n")
+    val argWithFilteredImport = arg.copy(imports = n.getImports
+      .filter(i => !i.isAsterisk && !i.isStatic)
+      .map(i => split(i.getName).swap).toMap)
+
+
+    val pkgAnnotationObjectString = if (n.getPackage != null && !isEmpty(n.getPackage.getAnnotations)) {
+      memberAnnotationsString(n.getPackage.getAnnotations, arg)._1 +
+      s"package object ${split(n.getPackage.getName)._2} {\n}\n"
+    } else ""
+
+    val typesString = Option(n.getTypes).map(_.map(_.accept(this, argWithFilteredImport)).mkString("\n\n")).getOrElse("")
+
+    s"""$packageString
+       |
+       |$importsString
+       |
+       |$pkgAnnotationObjectString
+       |
+       |$typesString
+     """.stripMargin
   }
   
   private def hasTryWithResources(n: CompilationUnit): Boolean = {
@@ -300,24 +201,12 @@ class ScalaStringVisitor(settings: ConversionSettings) extends GenericVisitor[St
     (str.substring(0,separator), str.substring(separator+1))
   }
 
-  def visit(n: PackageDeclaration, arg: Context): String = {
-    val printer = new SourcePrinter()
-    printer.print("package ")
-    if (!isEmpty(n.getAnnotations)) {
-      printer.print(split(n.getName)._1)
-    } else {
-      printer.print(n.getName.accept(this, arg))
-    }
-    printer.printLn()
-    printer.printLn()
-    printer.source
-  }
+  def visit(n: PackageDeclaration, arg: Context): String =
+    s"package ${if (!isEmpty(n.getAnnotations)) split(n.getName)._1 else n.getName.accept(this, arg)}\n\n"
 
-  def visit(n: NameExpr, arg: Context): String = {
-    visitName(n.getName)
-  }
+  def visit(n: NameExpr, arg: Context): String = visitName(n.getName)
 
-  def visitName(name: String): String = {
+  def visitName(name: String): String =
     if (RESERVED.contains(name)) {
       "`" + name + "`"
     } else if (PRIMITIVES.contains(name)) {
@@ -325,315 +214,200 @@ class ScalaStringVisitor(settings: ConversionSettings) extends GenericVisitor[St
     } else {
       name
     }
-  }
 
-  def visit(n: QualifiedNameExpr, arg: Context): String = {
-    val printer = new SourcePrinter()
-    printer.print(n.getQualifier.accept(this, arg))
-    printer.print(".")
-    printer.print(visitName(n.getName))
-    printer.source
-  }
+  def visit(n: QualifiedNameExpr, arg: Context): String =
+    s"${n.getQualifier.accept(this, arg)}.${visitName(n.getName)}"
 
   def visit(n: ImportDeclaration, arg: Context): String = {
-    val printer = new SourcePrinter()
-    printer.print("import ")
-    if (n.getName.getName.endsWith(".Array") && !n.isAsterisk) {
+    val toImport = if (n.getName.getName.endsWith(".Array") && !n.isAsterisk) {
       val className = n.getName.getName
       val pkg = className.substring(0, className.lastIndexOf('.'))
-      printer.print(pkg + ".{Array => _Array}")
+      s"$pkg.{Array => _Array}"
     } else {
-      printer.print(n.getName.accept(this, arg))
-      if (n.isAsterisk) {
-        printer.print("._")
-      }
+      n.getName.accept(this, arg) + (if (n.isAsterisk) "._" else "")
     }
 
-    printer.printLn()
-    printer.source
+    s"import $toImport\n"
   }
 
   def visit(n: ClassOrInterfaceDeclaration, arg: Context): String = {
-    val printer = new SourcePrinter()
-    printer.print(javadocString(n.getJavaDoc, arg))
-    printer.print(memberAnnotationsString(n.getAnnotations, arg)._1)
-    printer.print(modifiersString(n.getModifiers))
-    if (n.getModifiers.isObject) {
-      printer.print("object ")
+    val objectType = if (n.getModifiers.isObject) {
+      "object"
     } else if (n.isInterface) {
-      printer.print("trait ")
+      "trait"
     } else {
-      printer.print("class ")
+      "class"
     }
-    printer.print(n.getName)
-    printer.print(typeParametersString(n.getTypeParameters, arg))
-    var constr = getFirstConstructor(n.getMembers)
-    if (constr != null) {
-      n.setMembers(n.getMembers.filterNot(_ == constr))
+    val constructorOption = getFirstConstructor(n.getMembers)
+    constructorOption.foreach { c => n.setMembers(n.getMembers.filterNot(_ == c)) }
+    val superInvocation: Option[ExplicitConstructorInvocationStmt] = constructorOption.flatMap { cons =>
+      cons.getBlock.getStmts
+        .collect({ case x: ExplicitConstructorInvocationStmt => x })
+        .filter(!_.isThis).headOption
     }
-    var superInvocation: Option[ExplicitConstructorInvocationStmt] = None
-    if (constr != null) {
-      if (!isEmpty(constr.getParameters) || !constr.getModifiers.isPublic) {
-        printer.print(printConstructor(constr, arg, true))
+    val superTypes = Seq(
+    Option(n.getExtends.asScala),
+    Option(n.getImplements.asScala)
+    ).flatten.flatten.toList
+    val constructorString = (for {
+      cons <- constructorOption if (!isEmpty(cons.getParameters) || !cons.getModifiers.isPublic)
+    } yield printConstructor(cons, arg, true)
+      ).getOrElse("")
+    val superTypesString = if (!superTypes.isEmpty) {
+      superInvocation.foreach { s =>
+        constructorOption.get.getBlock.remove(s)
       }
-      superInvocation = constr.getBlock.getStmts
-          .collect({ case x: ExplicitConstructorInvocationStmt => x })
-          .filter(!_.isThis).headOption
-    }
-    var superTypes = new ArrayList[ClassOrInterfaceType]()
-    if (n.getExtends != null) {
-      superTypes.addAll(n.getExtends)
-    }
-    if (n.getImplements != null) {
-      superTypes.addAll(n.getImplements)
-    }
-    if (settings.splitLongLines && printer.lineLength > 75) {
-      printer.printLn()
-      printer.print("   ")
-    }
-    if (!superTypes.isEmpty) {
-      printer.print(" extends ")
-      var i = superTypes.iterator()
-      printer.print(i.next().accept(this, arg))
-      superInvocation.foreach { s => 
-        constr.getBlock.remove(s)
-        printer.print(argumentsString(s.getArgs, arg))
-      }
-      while (i.hasNext) {
-        printer.print(" with ")
-        printer.print(i.next().accept(this, arg))
-      }
-    }
-
-    if (!isEmpty(n.getMembers)) {
-      printer.printLn(" {")
-      printer.indent()
-      printer.print(membersString(n.getMembers, arg))
-      printer.unindent()
-      printer.print("}")
-    }
-    printer.source
+      s" extends ${superTypes.head.accept(this, arg)}${superInvocation.map(s => argumentsString(s.getArgs, arg)).getOrElse("")}" +
+        ("" :: superTypes.tail.map(_.accept(this, arg))).mkString(" with ")
+    } else ""
+    val declaredTypeString = s"${modifiersString(n.getModifiers)}$objectType ${n.getName}${typeParametersString(n.getTypeParameters, arg)}$constructorString"
+    val spacingAfterTypeString = if (settings.splitLongLines && declaredTypeString.length > 75) "\n   " else ""
+    val bodyString = if (!isEmpty(n.getMembers)) {
+      s" {\n${membersString(n.getMembers, arg)}\n}"
+    } else ""
+    val annotationsString = memberAnnotationsString(n.getAnnotations, arg)._1
+    Seq(
+      javadocString(n.getJavaDoc, arg), "\n",
+      annotationsString,
+      declaredTypeString,
+      spacingAfterTypeString,
+      superTypesString,
+      bodyString
+    ).mkString
   }
 
-  private def getFirstConstructor(members: List[BodyDeclaration]): ConstructorDeclaration = {
+  private def getFirstConstructor(members: List[BodyDeclaration]): Option[ConstructorDeclaration] = {
     if (members == null) {
       return null
     }
-    members.collectFirst({ case c: ConstructorDeclaration => c }).getOrElse(null)
+    members.collectFirst({ case c: ConstructorDeclaration => c })
   }
 
-  def visit(n: EmptyTypeDeclaration, arg: Context): String = {
-    javadocString(n.getJavaDoc, arg)
-  }
+  def visit(n: EmptyTypeDeclaration, arg: Context): String = javadocString(n.getJavaDoc, arg)
 
   def visit(n: JavadocComment, arg: Context): String = {
-    val printer = new SourcePrinter()
-    printer.printLn("/**")
-    for (line <- StringUtils.split(n.getContent.trim, '\n')) {
-      printer.printLn(" " + line.trim)
-    }
-    printer.printLn(" */")
-    printer.source
+    val comment = StringUtils.split(n.getContent.trim, '\n').map(" " + _.trim).mkString("\n")
+    s"/**\n$comment\n */"
   }
 
   def visit(n: ClassOrInterfaceType, arg: Context): String = {
-    val printer = new SourcePrinter()
-    if (n.getScope != null) {
-      printer.print(n.getScope.accept(this, arg))
-      printer.print(".")
+    val scopeString = if (n.getScope != null) {
+      n.getScope.accept(this, arg) + "."
     } else if (!arg.classOf && !arg.typeArg && PRIMITIVES.contains(n.getName)) {
       // primitive types are favored for class literals and type arguments
-      printer.print("java.lang.")
+      "java.lang."
     } else if (JAVA_TYPES.contains(n.getName)) {
-      printer.print("java.lang.")
-    }
-    if (n.getName == "Object") {
-      printer.print(if (arg.inObjectEquals || arg.typeArg) "Any" else "AnyRef")
+      "java.lang."
+    } else ""
+    val scalaTypeString = if (n.getName == "Object") {
+      if (arg.inObjectEquals || arg.typeArg) "Any" else "AnyRef"
     } else if (n.getScope == null && n.getName == "Array") {
       // TODO : only if Array import is present
-      printer.print("_Array")
+      "_Array"
 //    } else if (PRIMITIVES.contains(n.getName) && (arg.classOf || arg.typeArg)) {
 //      printer.print(PRIMITIVES(n.getName))
     } else {
-      printer.print(n.getName)
+      n.getName
     }
-    if (isEmpty(n.getTypeArgs)) {
+    val typeArgString = if (isEmpty(n.getTypeArgs)) {
       if (PARAMETRIZED.contains(n.getName)) {
-        printer.print("[_]")
+        "[_]"
       } else if (UTIL_PARAMETRIZED.contains(n.getName) && arg.imports.getOrElse(n.getName, "") == "java.util") {
-        printer.print(if (n.getName == "Map") "[_,_]" else "[_]")
-      }
-    }
-    printer.print(typeArgsString(n.getTypeArgs, arg))
-    printer.source
+        if (n.getName == "Map") "[_,_]" else "[_]"
+      } else ""
+    } else ""
+    Seq(
+      scopeString,
+      scalaTypeString,
+      typeArgString,
+      typeArgsString(n.getTypeArgs, arg)
+    ).mkString
   }
 
   def visit(n: TypeParameter, arg: Context): String = {
-    val printer = new SourcePrinter()
-    printer.print(n.getName)
-    if (n.getTypeBound != null && n.getTypeBound.size() > 0) {
-      printer.print(" <: ")
-      var i = n.getTypeBound.iterator()
-      while (i.hasNext) {
-        printer.print(i.next().accept(this, arg))
-        if (i.hasNext) {
-          printer.print(" with ")
-        }
-      }
-    }
-    printer.source
+    n.getName + (if (n.getTypeBound != null && n.getTypeBound.size() > 0) {
+      " <: " + n.getTypeBound.map(_.accept(this, arg)).mkString(" with ")
+    } else "")
   }
 
-  def visit(n: PrimitiveType, arg: Context): String = {
-    n.getType.name
-  }
+  def visit(n: PrimitiveType, arg: Context): String = n.getType.name
 
   def visit(n: ReferenceType, arg: Context): String = {
-    val printer = new SourcePrinter()
-    val typeArg = arg.typeArg
-    for (i <- 0 until n.getArrayCount) {
-      printer.print("Array[")
-      arg.typeArg = true
-    }
-    printer.print(n.getType.accept(this, arg))
-    arg.typeArg = typeArg
-    for (i <- 0 until n.getArrayCount) {
-      printer.print("]")
-    }
-    printer.source
+    val adaptedArg = if(n.getArrayCount > 0) arg.copy(typeArg = true) else arg
+    val prefix = "Array[" * n.getArrayCount
+    val postFix = "]" * n.getArrayCount
+    s"$prefix${n.getType.accept(this, adaptedArg)}$postFix"
   }
 
   def visit(n: WildcardType, arg: Context): String = {
-    val printer = new SourcePrinter()
-    printer.print("_")
-    if (n.getExtends != null) {
-      printer.print(" <: ")
-      printer.print(n.getExtends.accept(this, arg))
+    val maybeExtends = Option(n.getExtends).map { ext =>
+      s"<: ${ext.accept(this, arg)}"
     }
-    if (n.getSuper != null) {
-      printer.print(" >: ")
-      printer.print(n.getSuper.accept(this, arg))
+    val maybeSuper = Option(n.getSuper).map { sup =>
+      s">: ${sup.accept(this, arg)}"
     }
-    printer.source
+    Seq(Some("_"), maybeExtends, maybeSuper).flatten.mkString(" ")
   }
 
   def visit(n: FieldDeclaration, arg: Context): String = {
-    val printer = new SourcePrinter()
-    val oldType = arg.assignType
-    arg.assignType = n.getType
-    printer.print(javadocString(n.getJavaDoc, arg))
+    val argWithType = arg.copy(assignType = n.getType)
     val modifier = if (ModifierSet.isFinal(n.getModifiers)) "val " else "var "
-    val i = n.getVariables.iterator()
-    while (i.hasNext) {
-      var v = i.next()
-      printer.print(memberAnnotationsString(n.getAnnotations, arg)._1)
-      printer.print(modifiersString(n.getModifiers))
-      printer.print(modifier)
-      printer.print(v.getId.accept(this, arg))
-      if (v.getInit == null || modifier != "val ") {
-        if (v.getId.getName.endsWith("_")) {
-          printer.print(" ")
-        }
-        printer.print(": ")
-        printer.print(n.getType.accept(this, arg))
-      }
-      if (v.getInit == null) {
-        printer.print(" = _")
+    val variablesString = n.getVariables.map { v =>
+      val typeString = if (v.getInit == null || modifier != "val ") {
+        (if (v.getId.getName.endsWith("_")) " " else "") +
+          ": " + n.getType.accept(this, argWithType)
+      } else ""
+      val initializerString = if (v.getInit == null) {
+        " = _"
       } else {
-        printer.print(" = ")
-        printer.print(v.getInit.accept(this, arg))
+        " = " + v.getInit.accept(this, argWithType)
       }
-
-      if (i.hasNext) {
-        printer.printLn()
-        printer.printLn()
-      }
-    }
-    arg.assignType = oldType
-    printer.source
+      memberAnnotationsString(n.getAnnotations, argWithType)._1 +
+        modifiersString(n.getModifiers) +
+        modifier +
+        v.getId.accept(this, argWithType) + typeString + initializerString
+    }.mkString("\n\n")
+    javadocString(n.getJavaDoc, argWithType) +
+      variablesString
   }
 
-  def visit(n: VariableDeclarator, arg: Context): String = {
-    val printer = new SourcePrinter()
-    printer.print(n.getId.accept(this, arg))
-    if (n.getInit != null) {
-      printer.print(" = ")
-      printer.print(n.getInit.accept(this, arg))
-    }
-    printer.source
-  }
+  def visit(n: VariableDeclarator, arg: Context): String =
+    n.getId.accept(this, arg) + Option(n.getInit).map(" = " + _.accept(this, arg)).getOrElse("")
 
-  def visit(n: VariableDeclaratorId, arg: Context): String = {
+  def visit(n: VariableDeclaratorId, arg: Context): String =
     visitName(n.getName)
-//    for (i <- 0 until n.getArrayCount) {
-//      printer.print("[]")
-//    }
-  }
 
   def visit(n: ArrayInitializerExpr, arg: Context): String = {
-    val printer = new SourcePrinter()
-    printer.print("Array(")
-    if (n.getValues != null) {
-      var i = n.getValues.iterator()
-      while (i.hasNext) {
-        printer.print(i.next().accept(this, arg))
-        if (i.hasNext) {
-          printer.print(", ")
-        }
-      }
-    }
-    printer.print(")")
-    printer.source
+    val values = Option(n.getValues).toList.flatMap(_.map(_.accept(this, arg))).mkString(", ")
+    s"Array($values)"
   }
 
-  def visit(n: VoidType, arg: Context): String = {
-    val printer = new SourcePrinter()
-    printer.print("Unit")
-    printer.source
-  }
+  def visit(n: VoidType, arg: Context): String = "Unit"
 
   def visit(n: ArrayAccessExpr, arg: Context): String = {
-    val printer = new SourcePrinter()
-    val arrayAccess = arg.arrayAccess
-    arg.arrayAccess = true
-    printer.print(n.getName.accept(this, arg))
-    arg.arrayAccess = arrayAccess
-    printer.print("(")
-    printer.print(n.getIndex.accept(this, arg))
-    printer.print(")")
-    printer.source
+    val name = n.getName.accept(this, arg.copy(arrayAccess = true))
+    val index = n.getIndex.accept(this, arg)
+    s"$name($index)"
   }
 
   def visit(n: ArrayCreationExpr, arg: Context): String = {
-    val printer = new SourcePrinter()
     if (n.getDimensions != null && !n.getDimensions.isEmpty) {
-
-      if (arg.assignType != null) {
-        printer.print("new ")
-        printer.print(arg.assignType.accept(this, arg))
+      val withoutArguments = if (arg.assignType != null) {
+        s"new ${arg.assignType.accept(this, arg)}"
       } else {
         val max = n.getArrayCount + 1
         val dimString = (0 until max).map { _ =>
-          val typeArg = arg.typeArg
-          arg.typeArg = true
-          val str = n.getType.accept(this, arg)
-          arg.typeArg = typeArg
-          str
+          n.getType.accept(this, arg.copy(typeArg = true))
         }.mkString(",")
-        printer.print(s"Array.ofDim[$dimString]")
+        s"Array.ofDim[$dimString]"
       }
-
-      printer.print(n.getDimensions.map(stringify(_, arg)).mkString("(", ", ", ")"))
+      withoutArguments + n.getDimensions.map(stringify(_, arg)).mkString("(", ", ", ")")
     } else {
-      printer.print(n.getInitializer.accept(this, arg))
+      n.getInitializer.accept(this, arg)
     }
-    printer.source
   }
 
   def visit(n: AssignExpr, arg: Context): String = {
-    val printer = new SourcePrinter()
-    printer.print(n.getTarget.accept(this, arg))
-    printer.print(" ")
     import AssignExpr.{ Operator => Op }
     val symbol = n.getOperator match {
       case Op.assign => "="
@@ -649,16 +423,10 @@ class ScalaStringVisitor(settings: ConversionSettings) extends GenericVisitor[St
       case Op.rSignedShift => ">>="
       case Op.rUnsignedShift => ">>>="
     }
-    printer.print(symbol)
-    printer.print(" ")
-    printer.print(n.getValue.accept(this, arg))
-    printer.source
+    s"${n.getTarget.accept(this, arg)} $symbol ${n.getValue.accept(this, arg)}"
   }
 
   def visit(n: BinaryExpr, arg: Context): String = {
-    val printer = new SourcePrinter()
-    printer.print(n.getLeft.accept(this, arg))
-    printer.print(" ")
     import BinaryExpr.{ Operator => Op }
     val symbol = n.getOperator match {
       case Op.or => "||"
@@ -681,100 +449,47 @@ class ScalaStringVisitor(settings: ConversionSettings) extends GenericVisitor[St
       case Op.divide => "/"
       case Op.remainder => "%"
     }
-    printer.print(symbol)
-    printer.print(" ")
+    s"${n.getLeft.accept(this, arg)} $symbol " + (
     if (settings.splitLongLines && (stringify(n.getLeft, arg).length > 50 || stringify(n.getRight, arg).length > 50)) {
-      printer.printLn()
-      printer.print("  ")
-    }
-    printer.print(n.getRight.accept(this, arg))
-    printer.source
+      "\n  "
+    } else "") + n.getRight.accept(this, arg)
   }
 
   def visit(n: CastExpr, arg: Context): String = {
-    val printer = new SourcePrinter()
-    printer.print(n.getExpr.accept(this, arg))
+    n.getExpr.accept(this, arg) + (
     if (n.getType.isInstanceOf[PrimitiveType]) {
-      printer.print(".to")
-      printer.print(n.getType.accept(this, arg))
+      s".to${n.getType.accept(this, arg)}"
     } else {
-      printer.print(".asInstanceOf[")
-      printer.print(n.getType.accept(this, arg))
-      printer.print("]")
-    }
-    printer.source
+      s".asInstanceOf[${n.getType.accept(this, arg)}]"
+    })
   }
 
-  def visit(n: ClassExpr, arg: Context): String = {
-    val printer = new SourcePrinter()
-    printer.print("classOf[")
-    arg.classOf = true
-    printer.print(n.getType.accept(this, arg))
-    arg.classOf = false
-    printer.print("]")
-    printer.source
-  }
+  def visit(n: ClassExpr, arg: Context): String = s"classOf[${n.getType.accept(this, arg.copy(classOf = true))}]"
 
-  def visit(n: ConditionalExpr, arg: Context): String = {
-    val printer = new SourcePrinter()
-    printer.print("if (")
-    printer.print(n.getCondition.accept(this, arg))
-    printer.print(") ")
-    printer.print(n.getThenExpr.accept(this, arg))
-    printer.print(" else ")
-    printer.print(n.getElseExpr.accept(this, arg))
-    printer.source
-  }
+  def visit(n: ConditionalExpr, arg: Context): String =
+    s"if (${n.getCondition.accept(this, arg)}) ${n.getThenExpr.accept(this, arg.copy(mustWrap = true))} else ${n.getElseExpr.accept(this, arg.copy(mustWrap = true))}"
 
-  def visit(n: EnclosedExpr, arg: Context): String = {
-    val printer = new SourcePrinter()
+  def visit(n: EnclosedExpr, arg: Context): String =
     if (n.getInner.isInstanceOf[CastExpr]) {
-      printer.print(n.getInner.accept(this, arg))
+      n.getInner.accept(this, arg)
     } else {
-      printer.print("(")
-      printer.print(n.getInner.accept(this, arg))
-      printer.print(")")
+      s"(${n.getInner.accept(this, arg)})"
     }
-    printer.source
-  }
 
-  def visit(n: FieldAccessExpr, arg: Context): String = {
-    val printer = new SourcePrinter()
-    printer.print(n.getScope.accept(this, arg))
-    printer.print(".")
-    printer.print(visitName(n.getField))
-    printer.source
-  }
+  def visit(n: FieldAccessExpr, arg: Context): String =
+    s"${n.getScope.accept(this, arg)}.${visitName(n.getField)}"
 
-  def visit(n: InstanceOfExpr, arg: Context): String = {
-    val printer = new SourcePrinter()
-    printer.print(n.getExpr.accept(this, arg))
-    printer.print(".isInstanceOf[")
-    printer.print(n.getType.accept(this, arg))
-    printer.print("]")
-    printer.source
-  }
+  def visit(n: InstanceOfExpr, arg: Context): String =
+    s"${n.getExpr.accept(this, arg)}.isInstanceOf[${n.getType.accept(this, arg)}]"
 
-  def visit(n: CharLiteralExpr, arg: Context): String = {
-    val printer = new SourcePrinter()
-    printer.print("'")
-    printer.print(n.getValue)
-    printer.print("'")
-    printer.source
-  }
+  def visit(n: CharLiteralExpr, arg: Context): String = s"'${n.getValue}'"
 
-  def visit(n: DoubleLiteralExpr, arg: Context): String = {
-    removeUnderscores(n.getValue)
-  }
+  def visit(n: DoubleLiteralExpr, arg: Context): String = removeUnderscores(n.getValue)
 
-  def visit(n: IntegerLiteralExpr, arg: Context): String = {
-    numberValue(n.getValue, "Integer.parseInt")
-  }
+  def visit(n: IntegerLiteralExpr, arg: Context): String = numberValue(n.getValue, "Integer.parseInt")
 
-  def visit(n: LongLiteralExpr, arg: Context): String = {
-    numberValue(n.getValue, "java.lang.Long.parseLong")
-  }
-  
+  def visit(n: LongLiteralExpr, arg: Context): String = numberValue(n.getValue, "java.lang.Long.parseLong")
+
   private def removeUnderscores(n: String) = n.replaceAllLiterally("_", "")
   
   private def numberValue(n: String, parseMethod: String) = {
@@ -790,311 +505,176 @@ class ScalaStringVisitor(settings: ConversionSettings) extends GenericVisitor[St
     }
   }
 
-  def visit(n: IntegerLiteralMinValueExpr, arg: Context): String = {
-    n.getValue
-  }
+  def visit(n: IntegerLiteralMinValueExpr, arg: Context): String = n.getValue
 
-  def visit(n: LongLiteralMinValueExpr, arg: Context): String = {
-    n.getValue
-  }
+  def visit(n: LongLiteralMinValueExpr, arg: Context): String = n.getValue
 
-  def visit(n: StringLiteralExpr, arg: Context): String = {
-    val printer = new SourcePrinter()
-    printer.print("\"")
-    printer.print(n.getValue)
-    printer.print("\"")
-    printer.source
-  }
+  def visit(n: StringLiteralExpr, arg: Context): String = s""""${n.getValue}""""
 
-  def visit(n: BooleanLiteralExpr, arg: Context): String = {
-    String.valueOf(n.getValue)
-  }
+  def visit(n: BooleanLiteralExpr, arg: Context): String = String.valueOf(n.getValue)
 
-  def visit(n: NullLiteralExpr, arg: Context): String = {
-    "null"
-  }
+  def visit(n: NullLiteralExpr, arg: Context): String = "null"
 
   def visit(n: ThisExpr, arg: Context): String = {
-    val printer = new SourcePrinter()
-    if (n.getClassExpr != null) {
-      printer.print(n.getClassExpr.accept(this, arg))
-      printer.print(".")
-    }
-    printer.print("this")
-    printer.source
+    Option(n.getClassExpr).map { classExpr =>
+      s"${classExpr.accept(this, arg)}."
+    }.getOrElse("") + "this"
   }
 
   def visit(n: SuperExpr, arg: Context): String = {
-    val printer = new SourcePrinter()
-    if (n.getClassExpr != null) {
-      printer.print(n.getClassExpr.accept(this, arg))
-      printer.print(".")
-    }
-    printer.print("super")
-    printer.source
+    Option(n.getClassExpr).map { classExpr =>
+      s"${classExpr.accept(this, arg)}."
+    }.getOrElse("") + "super"
   }
 
-    //val split = arg.split
   def visit(n: MethodCallExpr, arg: Context): String = {
-    val printer = new SourcePrinter()
-    var args = if (n.getArgs == null) 0 else n.getArgs.size
+    val args = if (n.getArgs == null) 0 else n.getArgs.size
     val shortForm = SHORT_FORM.contains(n.getName) && args < 2 && !n.getArgs.get(0).isInstanceOf[LiteralExpr] || NO_ARGS_SHORT.contains(n.getName) && args == 0
-    if (n.getScope != null) {
-      val split = settings.splitLongLines && stringify(n.getScope, arg).length > 50
-      printer.print(n.getScope.accept(this, arg))
-      if (split) {
-        printer.printLn()
-        printer.print("  ")
-      }
-      printer.print(if ((shortForm && args == 1)) " " else ".")
-    }
-    if (METHOD_REPLACEMENTS.contains(n.getName)) {
-      printer.print(METHOD_REPLACEMENTS(n.getName))
+    val scopeString = Option(n.getScope).map { scope =>
+      scope.accept(this, arg) + (if ((shortForm && args == 1)) " " else ".")
+    }.getOrElse("")
+    val methodName = if (METHOD_REPLACEMENTS.contains(n.getName)) {
+      METHOD_REPLACEMENTS(n.getName)
     } else {
-      printer.print(visitName(n.getName))
+      visitName(n.getName)
     }
-    printer.print(typeArgsString(n.getTypeArgs, arg))
-    if (n.getName == "asList" && n.getScope != null && n.getScope.toString == "Arrays" && args == 1) {
+    val argsString = if (n.getName == "asList" && n.getScope != null && n.getScope.toString == "Arrays" && args == 1) {
       // assume Arrays.asList is called with an array argument
-      printer.print("(")
-      printer.print(n.getArgs().get(0).accept(this, arg))
-      printer.print(":_*)")
+      s"(${n.getArgs().get(0).accept(this, arg)}:_*)"
     } else if (arg.arrayAccess) {
-      printer.print(argumentsString(n.getArgs, arg))
+      argumentsString(n.getArgs, arg)
     } else if (shortForm) {
       if (args == 1) {
-        printer.print(" ")
-        printer.print(n.getArgs.get(0).accept(this, arg))
-      }
+        s" ${n.getArgs.get(0).accept(this, arg)}"
+      } else ""
     } else if (!(n.getName.startsWith("get") || n.getName.startsWith("is")) || args > 0) {
-      printer.print(argumentsString(n.getArgs, arg))
-    }
-    //arg.split = split
-    printer.source
+      argumentsString(n.getArgs, arg)
+    } else ""
+    scopeString +
+      methodName +
+      typeArgsString(n.getTypeArgs, arg) +
+      argsString
   }
 
   def visit(n: ObjectCreationExpr, arg: Context): String = {
-    val printer = new SourcePrinter()
-    if (n.getScope != null) {
-      printer.print(n.getScope.accept(this, arg))
-      printer.print(".")
-    }
-    printer.print("new ")
-    printer.print(typeArgsString(n.getTypeArgs, arg))
-    printer.print(n.getType.accept(this, arg))
-    printer.print(argumentsString(n.getArgs, arg))
-    if (n.getAnonymousClassBody != null) {
-      printer.printLn(" {")
-      printer.indent()
-      printer.print(membersString(n.getAnonymousClassBody, arg))
-      printer.unindent()
-      printer.print("}")
-    }
-    printer.source
+    Option(n.getScope).map(_.accept(this, arg) + ".").getOrElse("") +
+      "new " +
+      typeArgsString(n.getTypeArgs, arg) +
+      n.getType.accept(this, arg) +
+      argumentsString(n.getArgs, arg) +
+      Option(n.getAnonymousClassBody).toList.map { anonClassBody =>
+        s" {${membersString(anonClassBody, arg)}}"
+      }.mkString
   }
 
   def visit(n: UnaryExpr, arg: Context): String = {
-    val printer = new SourcePrinter()
     import UnaryExpr.{ Operator => Op }
     if (n.getOperator == Op.not && n.getExpr.isInstanceOf[MethodCallExpr] && n.getExpr.asInstanceOf[MethodCallExpr].getName == "equals") {
       val method = n.getExpr.asInstanceOf[MethodCallExpr]
-      printer.print(new MethodCallExpr(method.getScope, "!=", method.getArgs).accept(this, arg))
-      return printer.source
+      return new MethodCallExpr(method.getScope, "!=", method.getArgs).accept(this, arg)
     }
 
-    printer.print(n.getOperator match {
-      case Op.positive => "+"
-      case Op.negative => "-"
-      case Op.inverse => "~"
-      case Op.not => "!"
-//      case Op.preIncrement => "+= 1"
-//      case Op.preDecrement => "-= 1"
+    val exprString = n.getExpr.accept(this, arg)
+    n.getOperator match {
+      case Op.posIncrement => s"{$exprString += 1; $exprString - 1}"
+      case Op.posDecrement => s"{$exprString -= 1; $exprString + 1}"
+      case Op.positive => s"+$exprString"
+      case Op.negative => s"-$exprString"
+      case Op.inverse => s"~$exprString"
+      case Op.not => s"!$exprString"
       case _ => ""
-    })
-    if (n.getOperator == Op.posIncrement || n.getOperator == Op.posDecrement) {
-      printer.print("{")
     }
-    printer.print(n.getExpr.accept(this, arg))
-    printer.print(n.getOperator match {
-      case Op.posIncrement => " += 1"
-      case Op.posDecrement => " -= 1"
-      case _ => ""
-    })
-    if (n.getOperator == Op.posIncrement || n.getOperator == Op.posDecrement) {
-      printer.print("; ")
-      printer.print(n.getExpr.accept(this, arg))
-      printer.print(n.getOperator match {
-        case Op.posIncrement => " - 1"
-        case Op.posDecrement => " + 1"
-        case _ => ""
-      })
-      printer.print("}")
-    }
-    printer.source
   }
   def visit(n: ConstructorDeclaration, arg: Context): String = {
     printConstructor(n, arg, false)
   }
   private def printConstructor(n: ConstructorDeclaration, arg: Context, first: Boolean): String = {
-    val printer = new SourcePrinter()
-    if (!first) {
-      printer.print(javadocString(n.getJavaDoc, arg))
-    }
     val (annotationString, _) = memberAnnotationsString(n.getAnnotations, arg)
-    printer.print(annotationString)
-    if (first && (n.getModifiers.isPrivate || n.getModifiers.isProtected)) {
-      printer.print(" ")
-    }
-    printer.print(modifiersString(n.getModifiers))
+    val paramsString = Option(n.getParameters.asScala).toList.flatten.map(_.accept(this, arg)).mkString("(", ", ", ")")
     if (!first) {
-      printer.print("def this")
-      printer.print(typeParametersString(n.getTypeParameters, arg))
+      javadocString(n.getJavaDoc, arg) +
+        annotationString +
+        "def this" +
+        typeParametersString(n.getTypeParameters, arg) +
+        modifiersString(n.getModifiers) +
+        paramsString +
+        " = " +
+        n.getBlock.accept(this, arg)
+    } else {
+      annotationString +
+        (if (first && (n.getModifiers.isPrivate || n.getModifiers.isProtected)) {
+          " "
+        } else "") +
+        modifiersString(n.getModifiers) +
+        paramsString
     }
-    printer.print("(")
-    if (n.getParameters != null) {
-      val lineBreaks = settings.splitLongLines && n.getParameters.size > 3
-      val i = n.getParameters.iterator()
-      while (i.hasNext) {
-        printer.print(i.next().accept(this, arg))
-        if (i.hasNext) {
-          printer.print(", ")
-          if (lineBreaks) {
-            printer.printLn()
-            printer.print("    ")
-          }
-        }
-      }
-    }
-    printer.print(")")
-    if (!first) {
-      printer.print(" ")
-      printer.print(n.getBlock.accept(this, arg))
-    }
-    printer.source
   }
   def visit(n: MethodDeclaration, arg: Context): String = {
-    val printer = new SourcePrinter()
-    arg.inObjectEquals = n.getName == "equals" && n.getParameters.size == 1
-    printer.print(javadocString(n.getJavaDoc, arg))
-    var (annotationSource, hasOverride) = memberAnnotationsString(n.getAnnotations, arg)
-    printer.print(annotationSource)
-    printer.print(methodModifiersString(n.getModifiers))
-    if (hasOverride || isHashCode(n) || isEquals(n) || isToString(n)) {
-      printer.print("override ")
+    val argWithInCopyEquals = arg.copy(inObjectEquals = n.getName == "equals" && n.getParameters.size == 1)
+    val (annotationSource, hasOverride) = memberAnnotationsString(n.getAnnotations, argWithInCopyEquals)
+    val typeString = n.getType match {
+      case _: VoidType => "Unit"
+      case t => t.accept(this, argWithInCopyEquals)
     }
-    printer.print("def ")
-    printer.print(visitName(n.getName))
-    printer.print(typeParametersString(n.getTypeParameters, arg))
-    printer.print("(")
-    if (n.getParameters != null) {
-      val lineBreaks = settings.splitLongLines && n.getParameters.size > 3
-      val i = n.getParameters.iterator()
-      while (i.hasNext) {
-        printer.print(i.next().accept(this, arg))
-        if (i.hasNext) {
-          printer.print(", ")
-          if (lineBreaks) {
-            printer.printLn()
-            printer.print("    ")
-          }
-        }
-      }
-    }
-    printer.print(")")
-    if (!n.getType.isInstanceOf[VoidType] || n.getBody == null) {
-      printer.print(": ")
-      printer.print(n.getType.accept(this, arg))
-    }
-    if (n.getBody != null) {
-      if (!n.getType.isInstanceOf[VoidType]) {
-        printer.print(" = ")
-        if (n.getBody.getStmts.size == 1 && printer.lineLength < NL_THRESHOLD) {
-          val str = stringify(n.getBody.getStmts.get(0), arg)
-          if (str.length < 40) {
-            printer.print(str)
-          } else {
-            printer.print(n.getBody.accept(this, arg))
-          }
-        } else {
-          printer.print(n.getBody.accept(this, arg))
-        }
-      } else {
-        printer.print(" ")
-        val origUnwrap = arg.noUnwrap
-        arg.noUnwrap = arg.noUnwrap.+(n.getBody)
-        printer.print(n.getBody.accept(this, arg))
-        arg.noUnwrap = origUnwrap
-      }
-    }
-    printer.source
+    val bodyString = Option(n.getBody).map(" = " + _.accept(this, argWithInCopyEquals.copy(mustWrap = n.getType.isInstanceOf[VoidType]))).getOrElse("")
+
+    javadocString(n.getJavaDoc, argWithInCopyEquals) +
+      annotationSource +
+      methodModifiersString(n.getModifiers) +
+      (if (hasOverride || isHashCode(n) || isEquals(n) || isToString(n)) {
+        "override "
+      } else "") +
+      "def " +
+      visitName(n.getName) +
+      typeParametersString(n.getTypeParameters, argWithInCopyEquals) +
+      n.getParameters.asScala.map(_.accept(this, argWithInCopyEquals)).mkString("(", ", ", ")") +
+      ": " + typeString +
+      bodyString
   }
 
   def visit(n: Parameter, arg: Context): String = {
-    val printer = new SourcePrinter()
-    printer.print(annotationsString(n.getAnnotations, arg))
-    printer.print(modifiersString(n.getModifiers))
-    if (n.getModifiers.isProperty) {
-      printer.print(if (n.getModifiers.isFinal) "val " else "var ")
-    }
-    printer.print(n.getId.accept(this, arg))
-    printer.print(": ")
-    for (i <- 0 until n.getId.getArrayCount) {
-      printer.print("Array[")
-    }
-    printer.print(n.getType.accept(this, arg))
-    for (i <- 0 until n.getId.getArrayCount) {
-      printer.print("]")
-    }
-    if (n.isVarArgs) {
-      printer.print("*")
-    }
-    printer.source
+    val valVarString = if (n.getModifiers.isProperty) {
+      if (n.getModifiers.isFinal) "val " else "var "
+    } else ""
+    val typeString =
+      "Array[" * n.getId.getArrayCount +
+        n.getType.accept(this, arg) +
+        "]" * n.getId.getArrayCount +
+        (if (n.isVarArgs) "*" else "")
+    annotationsString(n.getAnnotations, arg) +
+      modifiersString(n.getModifiers) +
+      valVarString +
+      n.getId.accept(this, arg) +
+      ": " +
+      typeString
   }
 
   def visit(n: MultiTypeParameter, arg: Context): String = {
-    val printer = new SourcePrinter()
-    printer.print(annotationsString(n.getAnnotations, arg))
-    printer.print(modifiersString(n.getModifiers))
-    if (n.getModifiers.isProperty) {
-      printer.print(if (n.getModifiers.isFinal) "val " else "var ")
-    }
-
-    printer.print(n.getId.accept(this, arg))
-    n.getType.getElements.toList match {
-      case tpe :: Nil =>
-        printer.print(": ")
-        printer.print(tpe.accept(this, arg))
-      case types =>
-        printer.print(" @ (")
-        for ((tpe, i) <- types.zipWithIndex) {
-          val last = i == types.length - 1
-          printer.print("_: ")
-          printer.print(tpe.accept(this, arg))
-          if (!last) {
-            printer.print(" | ")
-          }
-        }
-        printer.print(")")
-    }
-    printer.source
+    val valVarString = if (n.getModifiers.isProperty) {
+      if (n.getModifiers.isFinal) "val " else "var "
+    } else ""
+    annotationsString(n.getAnnotations, arg) +
+      modifiersString(n.getModifiers) +
+      valVarString +
+      n.getId.accept(this, arg) +
+      (n.getType.getElements.toList match {
+        case tpe :: Nil =>
+          ": " + tpe.accept(this, arg)
+        case types =>
+          " @ " + types.map("_: " + _.accept(this, arg)).mkString("(", " | ", ")")
+      })
   }
 
   def visit(n: ExplicitConstructorInvocationStmt, arg: Context): String = {
-    val printer = new SourcePrinter()
-    if (n.isThis) {
-      printer.print(typeArgsString(n.getTypeArgs, arg))
-      printer.print("this")
+    (if (n.isThis) {
+      typeArgsString(n.getTypeArgs, arg) + "this"
     } else {
-      if (n.getExpr != null) {
-        printer.print(n.getExpr.accept(this, arg))
-        printer.print(".")
-      }
-      printer.print(typeArgsString(n.getTypeArgs, arg))
-      printer.print("super")
-    }
-    printer.print(argumentsString(n.getArgs, arg))
-    printer.source
+      Option(n.getExpr).map(_.accept(this, arg) + ".").getOrElse("") +
+        typeArgsString(n.getTypeArgs, arg) +
+        "super"
+    }) + argumentsString(n.getArgs, arg)
   }
+
   def isTypeInitMatch(n: VariableDeclarationExpr, v: VariableDeclarator) = {
     import PrimitiveType.Primitive
     val init = v.getInit
@@ -1119,63 +699,41 @@ class ScalaStringVisitor(settings: ConversionSettings) extends GenericVisitor[St
 
     }
   }
+
   def visit(n: VariableDeclarationExpr, arg: Context): String = {
-    val printer = new SourcePrinter()
     val asParameter = n.getModifiers == -1
-    var modifier = if (ModifierSet.isFinal(n.getModifiers)) "val " else "var "
-    var i = n.getVars.iterator()
-    while (i.hasNext) {
-      var v = i.next()
-      printer.print(annotationsString(n.getAnnotations, arg))
-      if (!asParameter) {
-        printer.print(modifier)
-      }
-      if (v.getInit == null || v.getInit.isInstanceOf[NullLiteralExpr] || !isTypeInitMatch(n, v)) {
-        printer.print(v.getId.accept(this, arg))
-        printer.print(": ")
-        for (i <- 0 until v.getId.getArrayCount) {
-          printer.print("Array[")
-        }
-        printer.print(n.getType.accept(this, arg))
-        for (i <- 0 until v.getId.getArrayCount) {
-          printer.print("]")
-        }
-        if (!asParameter) {
-          printer.print(" = ")
-          if (n.getType.isInstanceOf[PrimitiveType]) {
-            if (v.getInit != null) {
-              printer.print(v.getInit.accept(this, arg))
-            } else {
-              val ptype = n.getType.asInstanceOf[PrimitiveType]
-              printer.print(DEFAULTS(ptype.getType))
-            }
-          } else {
-            printer.print("null")
-          }
+    val valVarString = if (ModifierSet.isFinal(n.getModifiers)) "val " else "var "
+    n.getVars.map { v =>
+      val typeAndInit = if (v.getInit == null || v.getInit.isInstanceOf[NullLiteralExpr] || !isTypeInitMatch(n, v)) {
+        val initString = if (!asParameter) {
+          " = " + (n.getType match {
+            case prim: PrimitiveType => Option(v.getInit).map(_.accept(this, arg)).getOrElse(DEFAULTS(prim.getType))
+            case _ => null
+          })
           //printer.print(if (v.getInit() == null) "_" else "null")
-        }
+        } else ""
+        v.getId.accept(this, arg) + ": " +
+          "Array[" * v.getId.getArrayCount + n.getType.accept(this, arg) + "]" * v.getId.getArrayCount +
+          initString
       } else {
         v.getInit match {
-          case newObj: ObjectCreationExpr =>
-            if (newObj.getType() != null && (newObj.getType.getTypeArgs() == null || newObj.getType.getTypeArgs.isEmpty)) {
-              n.getType match {
-                case ref: ReferenceType =>
-                  ref.getType match {
-                    case tpe: ClassOrInterfaceType => newObj.getType.setTypeArgs(tpe.getTypeArgs())
-                    case _ =>
-                  }
-                case _ =>
-              }
+          case newObj: ObjectCreationExpr if (newObj.getType() != null && (newObj.getType.getTypeArgs() == null || newObj.getType.getTypeArgs.isEmpty)) =>
+            n.getType match {
+              case ref: ReferenceType =>
+                ref.getType match {
+                  case tpe: ClassOrInterfaceType => newObj.getType.setTypeArgs(tpe.getTypeArgs())
+                  case _ =>
+                }
+              case _ =>
             }
           case _ =>
         }
-        printer.print(v.accept(this, arg))
+        v.accept(this, arg)
       }
-      if (i.hasNext) {
-        printer.printLn()
-      }
-    }
-    printer.source
+      annotationsString(n.getAnnotations, arg) +
+        (if (!asParameter) valVarString else "") +
+        typeAndInit
+    }.mkString("\n")
   }
 
   def visit(n: TypeDeclarationStmt, arg: Context): String = {
@@ -1183,53 +741,36 @@ class ScalaStringVisitor(settings: ConversionSettings) extends GenericVisitor[St
   }
 
   def visit(n: AssertStmt, arg: Context): String = {
-    val printer = new SourcePrinter()
-    printer.print("assert(")
-    printer.print(n.getCheck.accept(this, arg))
-    printer.print(")")
-    if (n.getMessage != null) {
-      printer.print(" : ")
-      printer.print(n.getMessage.accept(this, arg))
-    }
-    printer.source
+    s"assert(${n.getCheck.accept(this, arg)})" + Option(n.getMessage).map { msg =>
+      s" : ${msg.accept(this, arg)}"
+    }.getOrElse("")
   }
 
   def visit(n: BlockStmt, arg: Context): String = {
-    val printer = new SourcePrinter()
-    if (!isEmpty(n.getStmts) && !arg.noUnwrap.contains(n) && n.getStmts.size == 1 && n.getStmts.get(0).isInstanceOf[SwitchStmt]) {
+    if (!isEmpty(n.getStmts) && !arg.mustWrap && n.getStmts.size == 1 && n.getStmts.get(0).isInstanceOf[SwitchStmt]) {
+      return n.getStmts.get(0).accept(this, arg)
+    } else if (!isEmpty(n.getStmts) && !arg.mustWrap && n.getStmts.size == 1) {
       return n.getStmts.get(0).accept(this, arg)
     }
-    printer.printLn("{")
-    if (n.getStmts != null) {
-      printer.indent()
-      val s = n.getStmts.iterator()
-      val returnOn = arg.returnOn
-      def print(stmt: Statement): Unit = {
-        printer.print(stmt.accept(this, arg))
-        printer.printLn()
-      }
-      while (s.hasNext) {
-        val stmt = s.next()
-        arg.returnOn = returnOn || s.hasNext
+    val argNoNeedForWrapping = arg.copy(mustWrap = false)
+    Option(n.getStmts).map { stmts =>
+      def processStatement(arg: Context, stmt: Statement): String =
         stmt match {
-          case b: BlockStmt => b.getStmts.foreach(print)
-          case _ => print(stmt)
+          case b: BlockStmt => b.getStmts.map(_.accept(this, argNoNeedForWrapping)).mkString("\n")
+          case s => s.accept(this, argNoNeedForWrapping)
         }
-      }
-      arg.returnOn = returnOn
-      printer.unindent()
-    }
-    printer.print("}")
-    printer.source
+
+      val stmtStrings = stmts.dropRight(1).map(processStatement(argNoNeedForWrapping.copy(returnOn = true), _)) ++
+        stmts.lastOption.map(processStatement(argNoNeedForWrapping, _)).toList
+      if (stmtStrings.size == 1 && !arg.mustWrap)
+        stmtStrings.head
+      else
+        stmtStrings.mkString("{\n", "\n", "\n}")
+    }.getOrElse("")
   }
 
-  def visit(n: LabeledStmt, arg: Context): String = {
-    val printer = new SourcePrinter()
-    printer.print(n.getLabel)
-    printer.print(": ")
-    printer.print(n.getStmt.accept(this, arg))
-    printer.source
-  }
+  def visit(n: LabeledStmt, arg: Context): String =
+    s"${n.getLabel}: ${n.getStmt.accept(this, arg)}"
 
   def visit(n: EmptyStmt, arg: Context): String = {
     ""
@@ -1240,57 +781,33 @@ class ScalaStringVisitor(settings: ConversionSettings) extends GenericVisitor[St
   }
 
   def visit(n: SwitchStmt, arg: Context): String = {
-    val printer = new SourcePrinter()
-    val oldSkip = arg.skip
-    arg.skip = false
-    printer.print(n.getSelector.accept(this, arg))
-    printer.printLn(" match {")
-    if (n.getEntries != null) {
-      printer.indent()
-      for (e <- n.getEntries) {
-        printer.print(e.accept(this, arg))
-        if (!arg.skip) {
-          printer.printLn()
-        }
-      }
-      printer.unindent()
-    }
-    printer.print("}")
-    arg.skip = oldSkip
-    printer.source
+    val argNoSkip = arg.copy(skip = false)
+    n.getSelector.accept(this, argNoSkip) + " match {\n" +
+      Option(n.getEntries).map { entries =>
+        // argNoSkip.skip is modified in-place, so we can't just mkString("")
+        entries.map(_.accept(this, argNoSkip) + (if (argNoSkip.skip) "" else "\n")).mkString
+      }.getOrElse("") +
+      "\n}"
   }
 
   def visit(n: SwitchEntryStmt, arg: Context): String = {
-    val printer = new SourcePrinter()
-    if (arg.skip) {
-      printer.print(" | ")
-      if (n.getLabel != null) {
-        printer.print(n.getLabel.accept(this, arg))
-      }
+    val matchExpr = if (arg.skip) {
+      " | " + Option(n.getLabel).map(_.accept(this, arg)).getOrElse("")
     } else {
-      printer.print("case ")
-      if (n.getLabel != null) {
-        printer.print(n.getLabel.accept(this, arg))
-      } else {
-        printer.print("_")
-      }
+      "case " + Option(n.getLabel).map(_.accept(this, arg)).getOrElse("_")
     }
     arg.skip = n.getStmts == null || n.getStmts.size() == 0
-    if (!arg.skip) {
-      printer.print(" => ")
-      if (n.getStmts.size == 1) {
-        printer.print(n.getStmts.get(0).accept(this, arg))
-      } else {
-        printer.printLn()
-        printer.indent()
-        for (s <- n.getStmts) {
-          printer.print(s.accept(this, arg))
-          printer.printLn()
-        }
-        printer.unindent()
-      }
-    }
-    printer.source
+    val resultExpr =
+      if (!arg.skip) {
+        " => " +
+          (if (n.getStmts.size == 1) {
+            n.getStmts.get(0).accept(this, arg)
+          } else {
+            "\n" +
+              n.getStmts.map(_.accept(this, arg)).mkString("\n")
+          })
+      } else ""
+    matchExpr + resultExpr
   }
 
   def visit(n: BreakStmt, arg: Context): String = {
@@ -1298,76 +815,42 @@ class ScalaStringVisitor(settings: ConversionSettings) extends GenericVisitor[St
   }
 
   def visit(n: ReturnStmt, arg: Context): String = {
-    val printer = new SourcePrinter()
-    if (n.getExpr != null) {
-      if (arg.returnOn) {
-        printer.print("return ")
-      }
-      printer.print(n.getExpr.accept(this, arg))
-    } else {
-      printer.print("return")
-    }
-    printer.source
+    Option(n.getExpr).map { expr =>
+      (if (arg.returnOn) {
+        "return "
+      } else "") +
+        expr.accept(this, arg)
+    }.getOrElse("return")
   }
 
   def visit(n: EnumDeclaration, arg: Context): String = {
-    val printer = new SourcePrinter()
-    printer.print(javadocString(n.getJavaDoc, arg))
-    printer.print(memberAnnotationsString(n.getAnnotations, arg)._1)
-    printer.print(modifiersString(n.getModifiers))
-    printer.print("enum ")
-    printer.print(n.getName)
-    if (n.getImplements != null) {
-      printer.print(" implements ")
-      var i = n.getImplements.iterator()
-      while (i.hasNext) {
-        printer.print(i.next().accept(this, arg))
-        if (i.hasNext) {
-          printer.print(", ")
-        }
-      }
-    }
-    printer.printLn(" {")
-    printer.indent()
-    if (n.getEntries != null) {
-      printer.printLn()
-      var i = n.getEntries.iterator()
-      while (i.hasNext) {
-        printer.print(i.next().accept(this, arg))
-        if (i.hasNext) {
-          printer.print(", ")
-        }
-      }
-    }
-    if (n.getMembers != null) {
-      printer.printLn(";")
-      printer.print(membersString(n.getMembers, arg))
-    } else {
-      if (n.getEntries != null) {
-        printer.printLn()
-      }
-    }
-    printer.unindent()
-    printer.print("}")
-    printer.source
+    val implementsString = Option(n.getImplements).map { impl =>
+      " implements " + impl.map(_.accept(this, arg)).mkString(", ")
+    }.getOrElse("")
+    val entriesString = Option(n.getEntries).map(_.map(_.accept(this, arg)).mkString(", ")).getOrElse("")
+    val memberString = Option(n.getMembers).map { members =>
+      ";" + membersString(members, arg)
+    }.getOrElse(Option(n.getEntries).map(_ => "\n").getOrElse(""))
+    javadocString(n.getJavaDoc, arg) +
+      memberAnnotationsString(n.getAnnotations, arg)._1 +
+      modifiersString(n.getModifiers) +
+      "enum " +
+      n.getName +
+      implementsString +
+      " {\n" +
+      entriesString + "\n" +
+      memberString + "\n" +
+      "}"
   }
 
   def visit(n: EnumConstantDeclaration, arg: Context): String = {
-    val printer = new SourcePrinter()
-    printer.print(javadocString(n.getJavaDoc, arg))
-    printer.print(memberAnnotationsString(n.getAnnotations, arg)._1)
-    printer.print(n.getName)
-    if (n.getArgs != null) {
-      printer.print(argumentsString(n.getArgs, arg))
-    }
-    if (n.getClassBody != null) {
-      printer.printLn(" {")
-      printer.indent()
-      printer.print(membersString(n.getClassBody, arg))
-      printer.unindent()
-      printer.printLn("}")
-    }
-    printer.source
+    javadocString(n.getJavaDoc, arg) +
+      memberAnnotationsString(n.getAnnotations, arg)._1 +
+      n.getName +
+      Option(n.getArgs).map(args => argumentsString(args, arg)).getOrElse("") +
+      Option(n.getClassBody).map { cb =>
+        s" {\n${membersString(n.getClassBody, arg)}\n}"
+      }.getOrElse("")
   }
 
   def visit(n: EmptyMemberDeclaration, arg: Context): String = {
@@ -1375,43 +858,21 @@ class ScalaStringVisitor(settings: ConversionSettings) extends GenericVisitor[St
   }
 
   def visit(n: InitializerDeclaration, arg: Context): String = {
-    val printer = new SourcePrinter()
-    if (n.getBlock.getStmts != null) {
-      val i = n.getBlock.getStmts.iterator
-      while (i.hasNext) {
-        val stmt = i.next()
-        if (!stmt.isInstanceOf[ExplicitConstructorInvocationStmt]) {
-          printer.print(stmt.accept(this, arg))
-          if (i.hasNext) {
-            printer.printLn()
-            printer.printLn()
-          }
-        }
-      }
-    }
-    printer.source
+    Option(n.getBlock.getStmts).map { stmts =>
+      stmts.flatMap {
+        case _: ExplicitConstructorInvocationStmt => None
+        case stmt => Some(stmt.accept(this, arg))
+      }.mkString("\n\n")
+    }.getOrElse("")
   }
 
   def visit(n: IfStmt, arg: Context): String = {
-    val printer = new SourcePrinter()
-    printer.print("if (")
-    printer.print(n.getCondition.accept(this, arg))
-    printer.print(") ")
-    printer.print(n.getThenStmt.accept(this, arg))
-    if (n.getElseStmt != null) {
-      printer.print(" else ")
-      printer.print(n.getElseStmt.accept(this, arg))
-    }
-    printer.source
+    s"if (${n.getCondition.accept(this, arg)}) ${n.getThenStmt.accept(this, arg.copy(mustWrap = true))}" +
+      Option(n.getElseStmt).map { elStmt => s" else ${elStmt.accept(this, arg.copy(mustWrap = true))}" }.getOrElse("")
   }
 
   def visit(n: WhileStmt, arg: Context): String = {
-    val printer = new SourcePrinter()
-    printer.print("while (")
-    printer.print(n.getCondition.accept(this, arg))
-    printer.print(") ")
-    printer.print(n.getBody.accept(this, arg))
-    printer.source
+    s"while (${n.getCondition.accept(this, arg)}) ${n.getBody.accept(this, arg)}"
   }
 
   def visit(n: ContinueStmt, arg: Context): String = {
@@ -1419,47 +880,35 @@ class ScalaStringVisitor(settings: ConversionSettings) extends GenericVisitor[St
   }
 
   def visit(n: DoStmt, arg: Context): String = {
-    val printer = new SourcePrinter()
-    printer.print("do ")
-    printer.print(n.getBody.accept(this, arg))
-    printer.print(" while (")
-    printer.print(n.getCondition.accept(this, arg))
-    printer.print(");")
-    printer.source
+    s"do ${n.getBody.accept(this, arg)} while (${n.getCondition.accept(this, arg)});"
   }
 
   def visit(n: ForeachStmt, arg: Context): String = {
-    val printer = new SourcePrinter()
-    printer.print("for (")
-    printer.print(n.getVariable.getVars.get(0).accept(this, arg))
-    printer.print(" <- ")
-    printer.print(n.getIterable.accept(this, arg))
-    var body = n.getBody
-    while (isUnwrapped(body)) {
-      Types.extract(body) match {
-        case fe: ForeachStmt =>
-          printer.print("; ")
-          if (settings.splitLongLines && printer.lineLength > NL_THRESHOLD) {
-            printer.printLn()
-            printer.print("     ")
-          }
-          printer.print(fe.getVariable.getVars.get(0).accept(this, arg))
-          printer.print(" <- ")
-          printer.print(fe.getIterable.accept(this, arg))
-          body = fe.getBody
-        case ifStmt: IfStmt =>
-          if (settings.splitLongLines && printer.lineLength > NL_THRESHOLD) {
-            printer.printLn()
-            printer.print("   ")
-          }
-          printer.print(" if ")
-          printer.print(ifStmt.getCondition.accept(this, arg))
-          body = ifStmt.getThenStmt
+    val forExpressionDescent = Iterator.iterate((n: Statement, "", 0)) { case (bdy, _, idx) =>
+      bdy match {
+        case MaybeInBlock(fe: ForeachStmt) =>
+          (
+            fe.getBody,
+            s"${if (idx > 0) "; " else ""}${fe.getVariable.getVars.get(0).accept(this, arg)} <- ${fe.getIterable.accept(this, arg)}",
+            idx + 1
+          )
+        case MaybeInBlock(ifStmt: IfStmt) =>
+          (
+            ifStmt.getThenStmt,
+            " if " + ifStmt.getCondition.accept(this, arg),
+            idx + 1
+          )
+        case _ => (null, "", idx + 1)
       }
-    }
-    printer.print(") ")
-    printer.print(body.accept(this, arg))
-    printer.source
+    case o => o
+    }.takeUpToWhere { case(bdy, _, _) =>
+      !isUnwrapped(bdy)
+    }.toVector
+
+    "for (" +
+      forExpressionDescent.map(_._2).mkString +
+      ") " +
+      forExpressionDescent.map(_._1).takeWhile(_ != null).last.accept(this, arg.copy(mustWrap = true))
   }
 
   private def isUnwrapped(stmt: Statement): Boolean = Types.extract(stmt) match {
@@ -1469,239 +918,130 @@ class ScalaStringVisitor(settings: ConversionSettings) extends GenericVisitor[St
   }
 
   def visit(n: ForStmt, arg: Context): String = {
-    val printer = new SourcePrinter()
-    if (n.getInit != null) {
-      n.getInit.foreach { i => 
-        printer.print(i.accept(this, arg))
-        printer.printLn()
-      }
-    }
-
-    // comparison
-    printer.print("while (")
-    if (n.getCompare != null) {
-      printer.print(n.getCompare.accept(this, arg))
-    } else {
-      printer.print("true")
-    }
-    printer.print(") ")
-
-    if (n.getUpdate != null && n.getBody.isInstanceOf[BlockStmt]) {
+    val loopCondition = Option(n.getCompare).map(_.accept(this, arg)).getOrElse("true")
+    val body = if (n.getUpdate != null && n.getBody.isInstanceOf[BlockStmt]) {
       // merge updates into block
       val block = n.getBody.asInstanceOf[BlockStmt]
       block.addAll(n.getUpdate.map(new ExpressionStmt(_)))
-
-      printer.print(block.accept(this, arg))
+      block.accept(this, arg)
     } else {
-      if (n.getUpdate != null) {
-        printer.print("{")
-      }
-
-      // update
-      printer.print(n.getBody.accept(this, arg))
-      if (n.getUpdate != null) {
-        n.getUpdate.foreach { u => 
-          printer.print(u.accept(this, arg))
-          printer.printLn()
-        }
-        printer.print("}")
-      }
+      val bodyString = n.getBody.accept(this, arg)
+      Option(n.getUpdate).map { update =>
+        s"{$bodyString" +
+          update.map(_.accept(this, arg)).mkString("\n") +
+          "\n}"
+      }.getOrElse(bodyString)
     }
-    printer.source
+    Option(n.getInit).toList.flatten.map { i =>
+      i.accept(this, arg)
+    }.mkString("", "\n", "\n") +
+      s"while ($loopCondition)" +
+      body
   }
 
   def visit(n: ThrowStmt, arg: Context): String = {
-    val printer = new SourcePrinter()
-    printer.print("throw ")
-    printer.print(n.getExpr.accept(this, arg))
-    printer.source
+    "throw " + n.getExpr.accept(this, arg)
   }
 
   def visit(n: SynchronizedStmt, arg: Context): String = {
-    val printer = new SourcePrinter()
-    if (n.getExpr != null) {
-      printer.print("synchronized (")
-      printer.print(n.getExpr.accept(this, arg))
-      printer.print(") ")
-    } else {
-      printer.print("synchronized ")
-    }
-    printer.print(n.getBlock.accept(this, arg))
-    printer.source
+    Option(n.getExpr).map(expr => s"synchronized (${expr.accept(this, arg.copy(mustWrap = true))}) ")
+      .getOrElse("synchronized ") +
+      n.getBlock.accept(this, arg.copy(mustWrap = true))
   }
-  
+
   def visit(n: TryStmt, arg: Context): String = {
-    val printer = new SourcePrinter()
     val wrapInTry = !isEmpty(n.getCatchs()) || n.getFinallyBlock() != null
-    if (wrapInTry) {
-      printer.print("try ")
-    }
-    def printResource(rd: VariableDeclarationExpr): Unit = {
-      for (resource <- rd.getVars()) {
-        printer.print(resource.getId.accept(this, arg))
-        printer.print(" <- managed(")
-        printer.print(resource.getInit.accept(this, arg))
-        printer.print(")")
-      }
-    }
 
-    if (!n.getResources.isEmpty) {
+    def resourceString(rd: VariableDeclarationExpr): String =
+      rd.getVars.map(res => s"${res.getId.accept(this, arg)} <- managed(${res.getInit.accept(this, arg)})").mkString("\n")
+
+
+    val resourcesString = if (!n.getResources.isEmpty) {
+      val forString = "for " +
+        (if (n.getResources.size == 1) {
+          "(" + resourceString(n.getResources.get(0)) + ")"
+        } else {
+          n.getResources.map(resourceString).mkString("{", "\n", "} ")
+        }) +
+        n.getTryBlock.accept(this, arg)
       if (wrapInTry) {
-        printer.printLn("{")
-        printer.indent()
-      }
-      printer.print("for ")
-      if (n.getResources.size == 1) {
-        printer.print("(")
-        val rd = n.getResources.get(0)
-        printResource(rd)
-        printer.print(")")
-      } else {
-        printer.printLn("{")
-        printer.indent()
-        for (rd <- n.getResources) {
-          printResource(rd)
-          printer.printLn()
-        }
-        printer.unindent()
-        printer.print("} ")
-      }
-      printer.print(n.getTryBlock.accept(this, arg))
-      if (wrapInTry) {
-        printer.printLn()
-        printer.unindent()
-        printer.print("}")
-      }
+        s"{\n$forString\n}"
+      } else
+        forString
     } else {
-      printer.print(n.getTryBlock.accept(this, arg))
+      n.getTryBlock.accept(this, arg)
     }
-
-    if (n.getCatchs != null && !n.getCatchs.isEmpty) {
-      printer.printLn(" catch {")
-      printer.indent()
-      for (c <- n.getCatchs) {
-        printer.print(c.accept(this, arg))
-      }
-      printer.unindent()
-      printer.print("}")
-    }
-    if (n.getFinallyBlock != null) {
-      printer.print(" finally ")
-      printer.print(n.getFinallyBlock.accept(this, arg))
-    }
-    printer.source
+    val catchString = Option(n.getCatchs).filterNot(_.isEmpty).map { catchs =>
+      s""" catch {
+         |   ${catchs.map(_.accept(this, arg)).mkString("\n")}
+         |}""".stripMargin
+    }.getOrElse("")
+    val finallyString = Option(n.getFinallyBlock).map(" finally " + _.accept(this, arg)).getOrElse("")
+    (if (wrapInTry) {
+      "try "
+    } else "") +
+      resourcesString +
+      catchString +
+      finallyString
   }
 
   def visit(n: CatchClause, arg: Context): String = {
-    val printer = new SourcePrinter()
-    printer.print("case ")
-    printer.print(n.getParam.accept(this, arg))
-    printer.print(" => ")
-    if (n.getCatchBlock.getStmts != null) {
-      if (n.getCatchBlock.getStmts.size == 1) {
-        printer.print(n.getCatchBlock.getStmts.get(0).accept(this, arg))
+    val catchBlockString = Option(n.getCatchBlock.getStmts).map { stmts =>
+      if (stmts.size == 1) {
+        stmts.get(0).accept(this, arg)
       } else {
-        printer.print(n.getCatchBlock.accept(this, arg))
+        n.getCatchBlock.accept(this, arg)
       }
-    }
-    printer.printLn()
-    printer.source
+    }.getOrElse("")
+    s"case ${n.getParam.accept(this, arg)} => $catchBlockString\n"
   }
 
   def visit(n: AnnotationDeclaration, arg: Context): String = {
-    val printer = new SourcePrinter()
-    printer.print(javadocString(n.getJavaDoc, arg))
-    printer.print(memberAnnotationsString(n.getAnnotations, arg)._1)
-    printer.print(modifiersString(n.getModifiers))
-    printer.print("@interface ")
-    printer.print(n.getName)
-    printer.printLn(" {")
-    printer.indent()
-    if (n.getMembers != null) {
-      printer.print(membersString(n.getMembers, arg))
-    }
-    printer.unindent()
-    printer.print("}")
-
-    printer.source
+    javadocString(n.getJavaDoc, arg) +
+      memberAnnotationsString(n.getAnnotations, arg)._1 +
+      modifiersString(n.getModifiers) +
+      "@interface " +
+      n.getName +
+      " {\n" +
+      Option(n.getMembers).map(m => membersString(m, arg)).toList.mkString +
+      "}"
   }
+
   def visit(n: AnnotationMemberDeclaration, arg: Context): String = {
-    val printer = new SourcePrinter()
-    printer.print(javadocString(n.getJavaDoc, arg))
-    printer.print(memberAnnotationsString(n.getAnnotations, arg)._1)
-    printer.print(modifiersString(n.getModifiers))
-    printer.print(visitName(n.getName))
-    printer.print(": ")
-    printer.print(n.getType.accept(this, arg))
-    if (n.getDefaultValue != null) {
-      printer.print("= ")
-      printer.print(n.getDefaultValue.accept(this, arg))
-    }
-    printer.source
+    javadocString(n.getJavaDoc, arg) +
+      memberAnnotationsString(n.getAnnotations, arg)._1 +
+      modifiersString(n.getModifiers) +
+      visitName(n.getName) +
+      ": " +
+      n.getType.accept(this, arg) +
+      Option(n.getDefaultValue).map("= " + _.accept(this, arg)).toList.mkString
   }
 
-  def visit(n: MarkerAnnotationExpr, arg: Context): String = {
-    val printer = new SourcePrinter()
-    printer.print("@")
-    printer.print(n.getName.accept(this, arg))
-    printer.source
-  }
+  def visit(n: MarkerAnnotationExpr, arg: Context): String = s"@${n.getName.accept(this, arg)}"
 
-  def visit(n: SingleMemberAnnotationExpr, arg: Context): String = {
-    val printer = new SourcePrinter()
-    printer.print("@")
-    printer.print(n.getName.accept(this, arg))
-    printer.print("(")
-    printer.print(n.getMemberValue.accept(this, arg))
-    printer.print(")")
-    printer.source
-  }
+  def visit(n: SingleMemberAnnotationExpr, arg: Context): String =
+    s"@${n.getName.accept(this, arg)}(${n.getMemberValue.accept(this, arg)})"
 
   def visit(n: NormalAnnotationExpr, arg: Context): String = {
-    val printer = new SourcePrinter()
-    printer.print("@")
-    printer.print(n.getName.accept(this, arg))
-    printer.print("(")
-    if (n.getPairs != null) {
-      var i = n.getPairs.iterator()
-      while (i.hasNext) {
-        printer.print(i.next().accept(this, arg))
-        if (i.hasNext) {
-          printer.print(", ")
-        }
-      }
-    }
-    printer.print(")")
-    printer.source
+    val pairsString = Option(n.getPairs).toList.flatten.map(_.accept(this, arg)).mkString("(", ", ", ")")
+    s"@${n.getName.accept(this, arg)}$pairsString"
   }
 
-  def visit(n: MemberValuePair, arg: Context): String = {
-    val printer = new SourcePrinter()
-    printer.print(visitName(n.getName))
-    printer.print(" = ")
-    printer.print(n.getValue.accept(this, arg))
-    printer.source
-  }
+  def visit(n: MemberValuePair, arg: Context): String = s"${visitName(n.getName)} = ${n.getValue.accept(this, arg)}"
 
-  def visit(n: LineComment, arg: Context): String = {
-    val printer = new SourcePrinter()
-    printer.print("//")
-    printer.printLn(n.getContent)
-    printer.source
-  }
+  def visit(n: LineComment, arg: Context): String = s"//${n.getContent}"
 
-  def visit(n: BlockComment, arg: Context): String = {
-    val printer = new SourcePrinter()
-    printer.print("/*")
-    printer.print(n.getContent)
-    printer.printLn("*/")
+  def visit(n: BlockComment, arg: Context): String = s"/*${n.getContent}*/\n"
 
-    printer.source
-  }
   def visit(x: TypeExpr, y: Context): String = ???
+
   def visit(x: MethodReferenceExpr, y: Context): String = ???
+
   def visit(x: LambdaExpr, y: Context): String = ???
+
   def visit(x: UnknownType, y: Context): String = ???
+
   def visit(x: UnionType, y: Context): String = ???
+
   def visit(x: IntersectionType, y: Context): String = ???
 }
