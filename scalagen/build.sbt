@@ -6,6 +6,7 @@ libraryDependencies ++= Seq(
   "net.sourceforge.collections" % "collections-generic" % commonsCollectionsVersion,
   "org.apache.commons" % "commons-lang3" % commonsLangVersion,
   "org.apache.commons" % "commons-io" % "1.3.2",
+  "com.geirsson" %% "scalafmt" % "0.5.1",
   "org.scala-lang" % "scala-library" % scalaVersion.value % "test",
   "com.novocode" % "junit-interface" % "0.11" % "test",
   "org.scala-lang" % "scala-compiler" % scalaVersion.value % "test",

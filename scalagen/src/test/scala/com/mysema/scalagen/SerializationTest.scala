@@ -22,9 +22,10 @@ import com.github.javaparser.JavaParser
 import com.mysema.examples._
 
 class SerializationTest extends AbstractParserTest {
+  private def normalizeString(str: String) = str.replaceAll("\\s+", "")
 
   private def assertContains(str: String, strings: String*) {
-    strings.foreach { s => assertTrue(s"$s was not found in$str", str.contains(s)) }
+    strings.foreach { s => assertTrue(s"\n$s\n\nwas not found in\n\n$str", normalizeString(str).contains(normalizeString(s))) }
   }
 
   @Test
