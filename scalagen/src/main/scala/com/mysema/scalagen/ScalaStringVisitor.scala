@@ -666,13 +666,16 @@ class ScalaStringVisitor(settings: ConversionSettings) extends GenericVisitor[St
   }
 
   def visit(n: ExplicitConstructorInvocationStmt, arg: Context): String = {
-    (if (n.isThis) {
-      typeArgsString(n.getTypeArgs, arg) + "this"
+    if (n.isThis) {
+      typeArgsString(n.getTypeArgs, arg) + "this" + argumentsString(n.getArgs, arg)
     } else {
-      Option(n.getExpr).map(_.accept(this, arg) + ".").getOrElse("") +
-        typeArgsString(n.getTypeArgs, arg) +
-        "super"
-    }) + argumentsString(n.getArgs, arg)
+      s"""this(???) /* TODO: Scala does not allow multiple super constructor calls
+         | * Change this code to call a constructor of the current class instead.
+         | * For your convenience, here is the invalid super constructor call:
+         | * ${Option(n.getExpr).map(_.accept(this, arg) + ".").getOrElse("")}${typeArgsString(n.getTypeArgs, arg)}}super${argumentsString(n.getArgs, arg)}
+         | */
+       """.stripMargin
+    }
   }
 
   def isTypeInitMatch(n: VariableDeclarationExpr, v: VariableDeclarator) = {
