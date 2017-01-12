@@ -13,14 +13,14 @@
  */
 package com.mysema.scalagen 
 
-import japa.parser.ast.Node
-import japa.parser.ast.body._
-import japa.parser.ast.expr._
-import japa.parser.ast.stmt._
-import japa.parser.ast.`type`._
-import japa.parser.ast.visitor.ModifierVisitorAdapter
-import japa.parser.ast.CompilationUnit
-import japa.parser.ast.ImportDeclaration
+import com.github.javaparser.ast.Node
+import com.github.javaparser.ast.body._
+import com.github.javaparser.ast.expr._
+import com.github.javaparser.ast.stmt._
+import com.github.javaparser.ast.`type`._
+import com.github.javaparser.ast.visitor.ModifierVisitorAdapter
+import com.github.javaparser.ast.CompilationUnit
+import com.github.javaparser.ast.ImportDeclaration
 import java.util.ArrayList
 
 object UnitTransformer extends Helpers with Types {
@@ -44,7 +44,7 @@ object UnitTransformer extends Helpers with Types {
       
   abstract class UnitTransformerBase extends ModifierVisitor[CompilationUnit] with UnitTransformer {
         
-    override def visit(n: CompilationUnit, arg: CompilationUnit): Node = {
+    override def visit(n: CompilationUnit, arg: CompilationUnit): Node = withCommentsFrom(n, arg) {
       val rv = new CompilationUnit()
       rv.setPackage(filter(n.getPackage, arg))
       rv.setImports(filter(n.getImports, arg))
