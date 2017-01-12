@@ -44,7 +44,7 @@ object UnitTransformer extends Helpers with Types {
       
   abstract class UnitTransformerBase extends ModifierVisitor[CompilationUnit] with UnitTransformer {
         
-    override def visit(n: CompilationUnit, arg: CompilationUnit): Node = {
+    override def visit(n: CompilationUnit, arg: CompilationUnit): Node = withCommentsFrom(n, arg) {
       val rv = new CompilationUnit()
       rv.setPackage(filter(n.getPackage, arg))
       rv.setImports(filter(n.getImports, arg))

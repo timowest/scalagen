@@ -19,13 +19,34 @@ import java.io.IOException
 import org.junit.{ Test, Ignore }
 import org.junit.Assert._
 import com.github.javaparser.JavaParser
+import com.github.javaparser.ast.Node
+import com.github.javaparser.ast.comments.{BlockComment, JavadocComment, LineComment}
+import com.github.javaparser.ast.visitor.TreeVisitor
 import com.mysema.examples._
+
+import scala.collection.mutable.ArrayBuffer
+import scala.reflect._
+import scala.collection.JavaConverters._
+
 
 class SerializationTest extends AbstractParserTest {
   private def normalizeString(str: String) = str.replaceAll("\\s+", "")
 
   private def assertContains(str: String, strings: String*) {
     strings.foreach { s => assertTrue(s"\n$s\n\nwas not found in\n\n$str", normalizeString(str).contains(normalizeString(s))) }
+  }
+
+  class NodeFinder[A: ClassTag](listener: A => Unit) extends TreeVisitor {
+    override def process(node: Node): Unit =
+      if(classTag[A].runtimeClass.isInstance(node))
+        listener(node.asInstanceOf[A])
+  }
+
+  def findNodesOfType[A: ClassTag](node: Node): Seq[A] = {
+    val buffer = new ArrayBuffer[A]()
+    val nodeFinder = new NodeFinder[A](buffer += _)
+    nodeFinder.visitDepthFirst(node)
+    buffer.toVector
   }
 
   @Test
@@ -291,10 +312,18 @@ class SerializationTest extends AbstractParserTest {
 
   }
 
-  @Test @Ignore // FIXME
+  @Test
   def WithComments {
     val sources = toScala[WithComments]
-    assertContains(sources, "javadocs", "// comments inside")
+    val javaCompilationUnit = getCompilationUnit(classOf[WithComments])
+    val allComments =
+      (findNodesOfType[BlockComment](javaCompilationUnit) ++
+        findNodesOfType[LineComment](javaCompilationUnit) ++
+        findNodesOfType[JavadocComment](javaCompilationUnit) ++
+        findNodesOfType[Node](javaCompilationUnit)
+          .flatMap(n => n.getAllContainedComments.asScala)).distinct
+    println(sources)
+    assertContains(sources, allComments.map(_.getContent): _*)
   }
 
   @Test
