@@ -37,7 +37,7 @@ class VarToVal extends ModifierVisitor[Vars] with UnitTransformer {
     cu.accept(this, Nil).asInstanceOf[CompilationUnit] 
   }  
   
-  override def visit(n: Block, arg: Vars): Node = {      
+  override def visit(n: Block, arg: Vars): Node = withCommentsFrom(n, arg) {
     if (n.getStmts == null) {
       return n
     }
@@ -49,7 +49,7 @@ class VarToVal extends ModifierVisitor[Vars] with UnitTransformer {
     super.visit(n,  vars :: arg)
   }
   
-  override def visit(n: Assign, arg: Vars): Node = {
+  override def visit(n: Assign, arg: Vars): Node = withCommentsFrom(n, arg) {
     removeFinal(n.getTarget.toString, arg)
     n
   }
