@@ -46,7 +46,7 @@ trait CompileTestUtils {
       //in 2.9, result is scala.tools.nsc.InterpreterResults
       //in 2.10, result is scala.tools.nsc.interpreter.Results
       if (result.toString != "Success") {
-        throw new AssertionError("Compile failed, interpreter output:\n" + out.toString("utf-8"))
+        throw new AssertionError("Compile failed, interpreter output:\n" + out.toString("utf-8") + " for the following code\n" + source)
       }
     } finally {
       interpreterWriter.close

@@ -15,38 +15,39 @@ package com.mysema.scalagen
 
 import java.io.File
 import java.io.FileInputStream
-import java.io.IOException
-import org.junit.Test
+import java.io.{IOException, File}
+import org.junit._
 import com.github.javaparser.JavaParser
 import com.mysema.scala.CompileTestUtils
 import org.junit.Assert._
+import org.junit.runner.RunWith
+import org.junit.runners.Parameterized
+import org.junit.runners.Parameterized.Parameters
 import TestDirectoryStructure._
 import scala.tools.nsc.Settings
 
-class ScalaCompilationTest extends AbstractParserTest with CompileTestUtils {
+import scala.collection.JavaConverters._
+import ScalaCompilationTest._
+object ScalaCompilationTest {
 
-  @Test
-  def Compile {
+  @Parameters
+  def data(): java.util.Collection[Array[File]] = {
     val resources = List[File](EXAMPLE_FILE_DIR.listFiles():_*)
     val filterString = sys.props.get("test-compile-filter")
     filterString.foreach(f => println(s"Filtering compilation test to files containing '$f'"))
-    // parallel compilation
-    val failures = resources.filter(
+    resources.filter(
       f => f.getName.endsWith(".java") &&
         filterString.map(f.getName.contains).getOrElse(true)
-    ).par.map(tryCompiling)
-      .toList
-      .filter(_ != null)
-
-    failures.foreach { case (n,m,s) => System.err.println(s"$n => $m in \n$s")}
-
-    assertTrue(
-      failures.size + " of " + resources.size + " failures : " + failures.map(_._1).mkString(", "),
-      failures.isEmpty)
+    ).map(Array(_)).asJava
   }
+}
 
-  private def tryCompiling(f: java.io.File): (String, String, String) = {
-    var unit = JavaParser.parse(new FileInputStream(f))
+@RunWith(classOf[Parameterized])
+class ScalaCompilationTest(private var file: File) extends AbstractParserTest with CompileTestUtils {
+
+  @Test
+  def Compile {
+    var unit = JavaParser.parse(new FileInputStream(file))
     val source = toScala(unit)
     val compilerSettingRegex = """compile: (.*)""".r
     val compilerSettingsModifier =  compilerSettingRegex.findFirstIn(unit.toString) match {
@@ -58,12 +59,6 @@ class ScalaCompilationTest extends AbstractParserTest with CompileTestUtils {
       case None =>
         identity[Settings] _
     }
-    try {
-      assertCompileSuccess(source, compilerSettingsModifier)
-      null
-    } catch {
-      case e: AssertionError => (f.getName, e.getMessage, source)
-      //case e: Exception => (f.getName, e.getMessage)
-    }
+    assertCompileSuccess(source, compilerSettingsModifier)
   }
 }
