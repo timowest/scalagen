@@ -29,12 +29,13 @@ trait CompileTestUtils {
                            mkString ("\n"))
   }
   
-  def assertCompileSuccess(source: String): Unit = {
+  def assertCompileSuccess(source: String, settingsTransformation: Settings => Settings = identity): Unit = {
     val out = new java.io.ByteArrayOutputStream
     val interpreterWriter = new java.io.PrintWriter(out)
     
-    val env = new Settings()
-    env.classpath.value = cpString
+    val untransformedEnv = new Settings()
+    untransformedEnv.classpath.value = cpString
+    val env = settingsTransformation(untransformedEnv)
     // The next line causes a problem like this "class StringContext does not have a member f"
     // env.usejavacp.value = true
 

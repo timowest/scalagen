@@ -29,6 +29,7 @@ class ScalaCompilationTest extends AbstractParserTest with CompileTestUtils {
   def Compile {
     val resources = List[File](EXAMPLE_FILE_DIR.listFiles():_*)
     val filterString = sys.props.get("test-compile-filter")
+    filterString.foreach(f => println(s"Filtering compilation test to files containing '$f'"))
     // parallel compilation
     val failures = resources.filter(
       f => f.getName.endsWith(".java") &&
@@ -47,8 +48,18 @@ class ScalaCompilationTest extends AbstractParserTest with CompileTestUtils {
   private def tryCompiling(f: java.io.File): (String, String, String) = {
     var unit = JavaParser.parse(new FileInputStream(f))
     val source = toScala(unit)
+    val compilerSettingRegex = """compile: (.*)""".r
+    val compilerSettingsModifier =  compilerSettingRegex.findFirstIn(unit.toString) match {
+      case Some(compilerSettingRegex(compilerSettings)) =>
+        { settings: Settings =>
+          settings.processArgumentString(compilerSettings)
+          settings
+        }
+      case None =>
+        identity[Settings] _
+    }
     try {
-      assertCompileSuccess(source)
+      assertCompileSuccess(source, compilerSettingsModifier)
       null
     } catch {
       case e: AssertionError => (f.getName, e.getMessage, source)

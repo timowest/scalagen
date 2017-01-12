@@ -524,11 +524,34 @@ abstract class ModifierVisitor[A] extends GenericVisitor[Node, A] {
 
   def visit(n: LineComment, arg: A): Node = new LineComment(n.getContent)
 
-  def visit(x: TypeExpr,y: A): Node = ???
-  def visit(x: MethodReferenceExpr,y: A): Node = ???
-  def visit(x: LambdaExpr,y: A): Node = ???
-  def visit(x: UnknownType,y: A): Node = ???
-  def visit(x: UnionType,y: A): Node = ???
-  def visit(x: IntersectionType,y: A): Node = ???
+  def visit(n: TypeExpr, arg: A): Node =
+    new TypeExpr(
+      n.getRange,
+      filter(n.getType, arg)
+    )
+
+  def visit(n: MethodReferenceExpr, arg: A): Node =
+    new MethodReferenceExpr(
+      n.getRange,
+      filter(n.getScope, arg),
+      n.getTypeArguments,
+      visitName(n.getIdentifier, arg)
+    )
+  def visit(n: LambdaExpr, arg: A): Node =
+    new LambdaExpr(
+      n.getRange,
+      filter(n.getParameters, arg),
+      filter(n.getBody, arg),
+      n.isParametersEnclosed()
+    )
+
+  def visit(n: UnknownType, arg: A): Node =
+    new UnknownType()
+
+  def visit(n: UnionType, arg: A): Node =
+    new UnionType(filter(n.getElements, arg))
+
+  def visit(n: IntersectionType, arg: A): Node =
+    new IntersectionType(filter(n.getElements, arg))
 
 }

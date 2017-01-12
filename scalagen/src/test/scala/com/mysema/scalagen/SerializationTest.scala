@@ -53,7 +53,7 @@ class SerializationTest extends AbstractParserTest {
     val sources = toScala[ArrayConstructorExpression[_]]
     assertContains(sources,
       "@SerialVersionUID(8667880104290226505L)",
-      "val elementType = `type`.getComponentType.asInstanceOf[Class[T]]",
+      "val elementType: Class[T] = `type`.getComponentType.asInstanceOf[Class[T]]",
       "override def equals(obj: Any): Boolean =")
 
   }
@@ -93,7 +93,7 @@ class SerializationTest extends AbstractParserTest {
   @Test
   def ConstantImpl {
     val sources = toScala[ConstantImpl[_]]
-    assertContains(sources, "private val BYTES = new Array[Constant[Byte]](CACHE_SIZE)")
+    assertContains(sources, "private val BYTES: Array[Constant[Byte]] = new Array[Constant[Byte]](CACHE_SIZE)")
   }
 
   @Test
@@ -131,13 +131,13 @@ class SerializationTest extends AbstractParserTest {
   def DateTimeExpression {
     val sources = toScala[DateTimeExpression[_]]
     assertContains(sources,
-        "lazy val dayOfMonth = NumberOperation.create(classOf[Integer], Ops.DateTimeOps.DAY_OF_MONTH, this)",
-        "lazy val dayOfWeek = NumberOperation.create(classOf[Integer], Ops.DateTimeOps.DAY_OF_WEEK, this)",
-        "lazy val dayOfYear = NumberOperation.create(classOf[Integer], Ops.DateTimeOps.DAY_OF_YEAR, this)",
-        "lazy val hour = NumberOperation.create(classOf[Integer], Ops.DateTimeOps.HOUR, this)",
-        "lazy val minute = NumberOperation.create(classOf[Integer], Ops.DateTimeOps.MINUTE, this)",
-        "lazy val second = NumberOperation.create(classOf[Integer], Ops.DateTimeOps.SECOND, this)",
-        "lazy val milliSecond = NumberOperation.create(classOf[Integer], Ops.DateTimeOps.MILLISECOND, this)")
+        "lazy val dayOfMonth: NumberExpression[Integer] = NumberOperation.create(classOf[Integer], Ops.DateTimeOps.DAY_OF_MONTH, this)",
+        "lazy val dayOfWeek: NumberExpression[Integer] = NumberOperation.create(classOf[Integer], Ops.DateTimeOps.DAY_OF_WEEK, this)",
+        "lazy val dayOfYear: NumberExpression[Integer] = NumberOperation.create(classOf[Integer], Ops.DateTimeOps.DAY_OF_YEAR, this)",
+        "lazy val hour: NumberExpression[Integer] = NumberOperation.create(classOf[Integer], Ops.DateTimeOps.HOUR, this)",
+        "lazy val minute: NumberExpression[Integer] = NumberOperation.create(classOf[Integer], Ops.DateTimeOps.MINUTE, this)",
+        "lazy val second: NumberExpression[Integer] = NumberOperation.create(classOf[Integer], Ops.DateTimeOps.SECOND, this)",
+        "lazy val milliSecond: NumberExpression[Integer] = NumberOperation.create(classOf[Integer], Ops.DateTimeOps.MILLISECOND, this)")
   }
 
   @Test
@@ -157,7 +157,7 @@ class SerializationTest extends AbstractParserTest {
     val sources = toScala[Immutable]
     assertContains(sources,
         "class Immutable(@BeanProperty val firstName: String, @BeanProperty val lastName: String)",
-        "val immutable = new Immutable")
+        "val immutable: Immutable = new Immutable")
   }
 
   @Test
@@ -191,7 +191,7 @@ class SerializationTest extends AbstractParserTest {
   @Test
   def LazyInitBeanAccessor {
     val sources = toScala[LazyInitBeanAccessor]
-    assertContains(sources, "lazy val value = \"XXX\"")
+    assertContains(sources, "lazy val value: String = \"XXX\"")
   }
   
   @Test
