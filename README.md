@@ -14,18 +14,18 @@ Scalagen has also been tested on our own projects such as Querydsl, RDFBean, Cod
 
 Scalagen provides direct Maven support via a plugin. You can use it directly via the command line like this
 
-    mvn com.mysema.scalagen:scalagen-maven-plugin:0.2.2:main -DtargetFolder=target/scala
+    mvn com.mysema.scalagen:scalagen-maven-plugin:0.3.2:main -DtargetFolder=target/scala
     
 and for test sources
 
-    mvn com.mysema.scalagen:scalagen-maven-plugin:0.2.2:test -DtargetFolder=target/scala
+    mvn com.mysema.scalagen:scalagen-maven-plugin:0.3.2:test -DtargetFolder=target/scala
 
 Here is the snippet for an explicit configuration in a POM:
 
     <plugin>
       <groupId>com.mysema.scalagen</groupId>
       <artifactId>scalagen-maven-plugin</artifactId>
-      <version>0.2.2</version>
+      <version>0.3.2</version>
     </plugin>
     
 To convert main sources run
@@ -42,6 +42,14 @@ Some elements are not transformed correctly for various reasons and will need ma
 ### Development
 
 Scalagen development instructions are here https://github.com/mysema/scalagen/wiki/Scalagen-development
+
+Basic, common instructions when developing (installs dev versions into the local maven repo):
+
+    cd scalagen
+    mvn -Pscala-2.11.x -DskipTests install
+    cd ..
+    cd scalagen-maven-plugin
+    mvn -Pscala-2.11.x -Dscala.repoVersion=2.11 -DskipTests install
 
 #### Building
 
