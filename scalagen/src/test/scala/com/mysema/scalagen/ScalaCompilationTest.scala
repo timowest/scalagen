@@ -15,35 +15,50 @@ package com.mysema.scalagen
 
 import java.io.File
 import java.io.FileInputStream
-import java.io.IOException
-import org.junit.Test
-import japa.parser.JavaParser
+import java.io.{IOException, File}
+import org.junit._
+import com.github.javaparser.JavaParser
 import com.mysema.scala.CompileTestUtils
 import org.junit.Assert._
+import org.junit.runner.RunWith
+import org.junit.runners.Parameterized
+import org.junit.runners.Parameterized.Parameters
+import TestDirectoryStructure._
+import scala.tools.nsc.Settings
 
-class ScalaCompilationTest extends AbstractParserTest with CompileTestUtils {
+import scala.collection.JavaConverters._
+import ScalaCompilationTest._
+object ScalaCompilationTest {
+
+  @Parameters
+  def data(): java.util.Collection[Array[File]] = {
+    val resources = List[File](EXAMPLE_FILE_DIR.listFiles():_*)
+    val filterString = sys.props.get("test-compile-filter")
+    filterString.foreach(f => println(s"Filtering compilation test to files containing '$f'"))
+    resources.filter(
+      f => f.getName.endsWith(".java") &&
+        filterString.map(f.getName.contains).getOrElse(true)
+    ).map(Array(_)).asJava
+  }
+}
+
+@RunWith(classOf[Parameterized])
+class ScalaCompilationTest(private var file: File) extends AbstractParserTest with CompileTestUtils {
 
   @Test
   def Compile {
-    val resources = List[File](new File("src/test/scala/com/mysema/examples").listFiles():_*)
-    
-    // parallel compilation
-    val failures = resources.filter(_.getName.endsWith(".java")).map { f =>
-      var unit = JavaParser.parse(new FileInputStream(f))
-      val source = toScala(unit)      
-      try {
-        assertCompileSuccess(source)
-        null
-      } catch {
-        case e: AssertionError => (f.getName, e.getMessage)
-        //case e: Exception => (f.getName, e.getMessage)  
-      }
-    }.toList.filter(_ != null).toMap
-    
-    failures.foreach { case (n,m) => System.err.println(n + " => " + m)}
-    
-    assertTrue(
-      failures.size + " of " + resources.size + " failures : " + failures.keys.mkString(", "), 
-      failures.isEmpty)
+    var unit = JavaParser.parse(new FileInputStream(file))
+    val source = toScala(unit)
+    val compilerSettingRegex = """compile: (.*)""".r
+    val compilerSettingsModifier =  compilerSettingRegex.findFirstIn(unit.toString) match {
+      case Some(compilerSettingRegex(compilerSettings)) =>
+        { settings: Settings =>
+          settings.processArgumentString(compilerSettings)
+          settings
+        }
+      case None =>
+        identity[Settings] _
+    }
+    assertCompileSuccess(source, compilerSettingsModifier)
   }
 }

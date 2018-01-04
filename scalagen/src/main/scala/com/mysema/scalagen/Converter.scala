@@ -14,11 +14,11 @@
 package com.mysema.scalagen
 
 import java.io.{File, ByteArrayInputStream}
-import japa.parser.JavaParser
-import japa.parser.ast.{ImportDeclaration, CompilationUnit}
+import com.github.javaparser.JavaParser
+import com.github.javaparser.ast.{ImportDeclaration, CompilationUnit}
 import org.apache.commons.io.FileUtils
 import java.util.ArrayList
-import japa.parser.ParseException
+import com.github.javaparser.ParseException
 import java.io.ByteArrayInputStream
 import java.util.regex.Pattern
 
@@ -92,7 +92,6 @@ class Converter(encoding: String, transformers: List[UnitTransformer]) {
       
     // create out folders
     inToOut.foreach(_._2.getParentFile.mkdirs() )  
-    JavaParser.setCacheParser(false)
     inToOut.foreach{ case (in,out) => convertFile(in,out) }
   }
   
@@ -115,10 +114,10 @@ class Converter(encoding: String, transformers: List[UnitTransformer]) {
     if (unit.getImports == null) {
       unit.setImports(new ArrayList[ImportDeclaration]())  
     }    
-    val transformed = transformers.foldLeft(unit) { case (u,t) => t.transform(u) }    
-    var visitor = new ScalaDumpVisitor(settings)
-    transformed.accept(visitor, new ScalaDumpVisitor.Context())
-    visitor.getSource
+    val transformed = transformers.foldLeft(unit) { case (u,t) => t.transform(u) }
+    val visitor = new ScalaStringVisitor(settings)
+    val convertedCode = transformed.accept(visitor, new ScalaStringVisitor.Context())
+    org.scalafmt.Scalafmt.format(convertedCode).get
   }
   
   private def toOut(inFolderLength: Int, outFolder: File, in: File): File = {

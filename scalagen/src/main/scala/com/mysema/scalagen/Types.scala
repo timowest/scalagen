@@ -13,14 +13,14 @@
  */
 package com.mysema.scalagen 
 
-import japa.parser.ast.Node
-import japa.parser.ast.body._
-import japa.parser.ast.expr._
-import japa.parser.ast.stmt._
-import japa.parser.ast.`type`._
-import japa.parser.ast.visitor.ModifierVisitorAdapter
-import japa.parser.ast.CompilationUnit
-import japa.parser.ast.ImportDeclaration
+import com.github.javaparser.ast.Node
+import com.github.javaparser.ast.body._
+import com.github.javaparser.ast.expr._
+import com.github.javaparser.ast.stmt._
+import com.github.javaparser.ast.`type`._
+import com.github.javaparser.ast.visitor.ModifierVisitorAdapter
+import com.github.javaparser.ast.CompilationUnit
+import com.github.javaparser.ast.ImportDeclaration
 import java.util.ArrayList
 
 object Types extends Types
@@ -33,7 +33,14 @@ trait Types {
   def extract(stmt: Statement): Statement = stmt match {
     case b: Block => if (b.getStmts != null && b.getStmts.size == 1) b.getStmts.get(0) else b
     case _ => stmt
-  } 
+  }
+
+  object MaybeInBlock {
+    def unapplySeq(statement: Statement): Option[Seq[Statement]] = statement match {
+      case b: Block if (b.getStmts != null) => Some(b.getStmts)
+      case s => Some(Seq(s))
+    }
+  }
     
   //private def safeToString(obj: AnyRef): String = if (obj != null) obj.toString else null
   
@@ -112,7 +119,7 @@ trait Types {
   }
   
   object Catch {
-    def unapply(c: Catch) = Some(c.getExcept, extract(c.getCatchBlock))
+    def unapply(c: Catch) = Some(c.getParam, extract(c.getCatchBlock))
   }
   
   object ClassOrInterface {
@@ -248,7 +255,7 @@ trait Types {
   
   type ClassOrInterface = ClassOrInterfaceType
   
-  type CompilationUnit = japa.parser.ast.CompilationUnit
+  type CompilationUnit = com.github.javaparser.ast.CompilationUnit
   
   type Conditional = ConditionalExpr
     
@@ -260,9 +267,9 @@ trait Types {
   
   type EnumDecl = EnumDeclaration
   
-  type Expression = japa.parser.ast.expr.Expression
+  type Expression = com.github.javaparser.ast.expr.Expression
   
-  type ExpressionStmt = japa.parser.ast.stmt.ExpressionStmt
+  type ExpressionStmt = com.github.javaparser.ast.stmt.ExpressionStmt
   
   type Field = FieldDeclaration
     
@@ -290,25 +297,25 @@ trait Types {
     
   type Name = NameExpr
     
-  type Node = japa.parser.ast.Node
+  type Node = com.github.javaparser.ast.Node
   
   type Null = NullLiteralExpr
   
   type ObjectCreation = ObjectCreationExpr
     
-  type Parameter = japa.parser.ast.body.Parameter
+  type Parameter = com.github.javaparser.ast.body.Parameter
   
   type Return = ReturnStmt
   
   type SingleMemberAnnotation = SingleMemberAnnotationExpr
 
-  type Statement = japa.parser.ast.stmt.Statement
+  type Statement = com.github.javaparser.ast.stmt.Statement
   
   type Switch = SwitchStmt
   
   type SwitchEntry = SwitchEntryStmt
   
-  type SynchronizedStmt = japa.parser.ast.stmt.SynchronizedStmt
+  type SynchronizedStmt = com.github.javaparser.ast.stmt.SynchronizedStmt
   
   type This = ThisExpr
   
@@ -316,9 +323,9 @@ trait Types {
   
   type Try = TryStmt
   
-  type Type = japa.parser.ast.`type`.Type
+  type Type = com.github.javaparser.ast.`type`.Type
 
-  type TypeDecl = japa.parser.ast.body.TypeDeclaration
+  type TypeDecl = com.github.javaparser.ast.body.TypeDeclaration
   
   type Unary = UnaryExpr
   
@@ -326,10 +333,10 @@ trait Types {
   
   type VariableDeclaration = VariableDeclarationExpr
   
-  //type VariableDeclarator = japa.parser.ast.body.VariableDeclarator
+  //type VariableDeclarator = com.github.javaparser.ast.body.VariableDeclarator
   
-  type VariableDeclaratorId = japa.parser.ast.body.VariableDeclaratorId
+  type VariableDeclaratorId = com.github.javaparser.ast.body.VariableDeclaratorId
 
-  type VoidType = japa.parser.ast.`type`.VoidType
+  type VoidType = com.github.javaparser.ast.`type`.VoidType
   
 }

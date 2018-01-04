@@ -14,10 +14,10 @@
 package com.mysema.scalagen
 
 import java.util.ArrayList
-import japa.parser.ast.CompilationUnit
+import com.github.javaparser.ast.CompilationUnit
 import UnitTransformer._
 import defs._
-import japa.parser.ast.body.ModifierSet
+import com.github.javaparser.ast.body.ModifierSet
 
 object Synchronized extends Synchronized
 

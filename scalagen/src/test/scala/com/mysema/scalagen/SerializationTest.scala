@@ -18,13 +18,35 @@ import java.io.FileInputStream
 import java.io.IOException
 import org.junit.{ Test, Ignore }
 import org.junit.Assert._
-import japa.parser.JavaParser
+import com.github.javaparser.JavaParser
+import com.github.javaparser.ast.Node
+import com.github.javaparser.ast.comments.{BlockComment, JavadocComment, LineComment}
+import com.github.javaparser.ast.visitor.TreeVisitor
 import com.mysema.examples._
 
+import scala.collection.mutable.ArrayBuffer
+import scala.reflect._
+import scala.collection.JavaConverters._
+
+
 class SerializationTest extends AbstractParserTest {
+  private def normalizeString(str: String) = str.replaceAll("\\s+", "")
 
   private def assertContains(str: String, strings: String*) {
-    strings.foreach { s => assertTrue(s + " was not found", str.contains(s)) }
+    strings.foreach { s => assertTrue(s"\n$s\n\nwas not found in\n\n$str", normalizeString(str).contains(normalizeString(s))) }
+  }
+
+  class NodeFinder[A: ClassTag](listener: A => Unit) extends TreeVisitor {
+    override def process(node: Node): Unit =
+      if(classTag[A].runtimeClass.isInstance(node))
+        listener(node.asInstanceOf[A])
+  }
+
+  def findNodesOfType[A: ClassTag](node: Node): Seq[A] = {
+    val buffer = new ArrayBuffer[A]()
+    val nodeFinder = new NodeFinder[A](buffer += _)
+    nodeFinder.visitDepthFirst(node)
+    buffer.toVector
   }
 
   @Test
@@ -52,7 +74,7 @@ class SerializationTest extends AbstractParserTest {
     val sources = toScala[ArrayConstructorExpression[_]]
     assertContains(sources,
       "@SerialVersionUID(8667880104290226505L)",
-      "val elementType = `type`.getComponentType.asInstanceOf[Class[T]]",
+      "val elementType: Class[T] = `type`.getComponentType.asInstanceOf[Class[T]]",
       "override def equals(obj: Any): Boolean =")
 
   }
@@ -92,7 +114,7 @@ class SerializationTest extends AbstractParserTest {
   @Test
   def ConstantImpl {
     val sources = toScala[ConstantImpl[_]]
-    assertContains(sources, "private val BYTES = new Array[Constant[Byte]](CACHE_SIZE)")
+    assertContains(sources, "private val BYTES: Array[Constant[Byte]] = new Array[Constant[Byte]](CACHE_SIZE)")
   }
 
   @Test
@@ -123,20 +145,20 @@ class SerializationTest extends AbstractParserTest {
   @Test
   def Dao {
     val sources = toScala[IDao[_,_]]
-    assertContains(sources, "trait IDao[Entity, Id <: Serializable] {")
+    assertContains(sources, "trait IDao[Entity, Id <: Serializable]")
   }
 
   @Test
   def DateTimeExpression {
     val sources = toScala[DateTimeExpression[_]]
     assertContains(sources,
-        "lazy val dayOfMonth = NumberOperation.create(classOf[Integer], Ops.DateTimeOps.DAY_OF_MONTH, this)",
-        "lazy val dayOfWeek = NumberOperation.create(classOf[Integer], Ops.DateTimeOps.DAY_OF_WEEK, this)",
-        "lazy val dayOfYear = NumberOperation.create(classOf[Integer], Ops.DateTimeOps.DAY_OF_YEAR, this)",
-        "lazy val hour = NumberOperation.create(classOf[Integer], Ops.DateTimeOps.HOUR, this)",
-        "lazy val minute = NumberOperation.create(classOf[Integer], Ops.DateTimeOps.MINUTE, this)",
-        "lazy val second = NumberOperation.create(classOf[Integer], Ops.DateTimeOps.SECOND, this)",
-        "lazy val milliSecond = NumberOperation.create(classOf[Integer], Ops.DateTimeOps.MILLISECOND, this)")
+        "lazy val dayOfMonth: NumberExpression[Integer] = NumberOperation.create(classOf[Integer], Ops.DateTimeOps.DAY_OF_MONTH, this)",
+        "lazy val dayOfWeek: NumberExpression[Integer] = NumberOperation.create(classOf[Integer], Ops.DateTimeOps.DAY_OF_WEEK, this)",
+        "lazy val dayOfYear: NumberExpression[Integer] = NumberOperation.create(classOf[Integer], Ops.DateTimeOps.DAY_OF_YEAR, this)",
+        "lazy val hour: NumberExpression[Integer] = NumberOperation.create(classOf[Integer], Ops.DateTimeOps.HOUR, this)",
+        "lazy val minute: NumberExpression[Integer] = NumberOperation.create(classOf[Integer], Ops.DateTimeOps.MINUTE, this)",
+        "lazy val second: NumberExpression[Integer] = NumberOperation.create(classOf[Integer], Ops.DateTimeOps.SECOND, this)",
+        "lazy val milliSecond: NumberExpression[Integer] = NumberOperation.create(classOf[Integer], Ops.DateTimeOps.MILLISECOND, this)")
   }
 
   @Test
@@ -156,7 +178,7 @@ class SerializationTest extends AbstractParserTest {
     val sources = toScala[Immutable]
     assertContains(sources,
         "class Immutable(@BeanProperty val firstName: String, @BeanProperty val lastName: String)",
-        "val immutable = new Immutable")
+        "val immutable: Immutable = new Immutable")
   }
 
   @Test
@@ -190,7 +212,7 @@ class SerializationTest extends AbstractParserTest {
   @Test
   def LazyInitBeanAccessor {
     val sources = toScala[LazyInitBeanAccessor]
-    assertContains(sources, "lazy val value = \"XXX\"")
+    assertContains(sources, "lazy val value: String = \"XXX\"")
   }
   
   @Test
@@ -290,10 +312,17 @@ class SerializationTest extends AbstractParserTest {
 
   }
 
-  @Test @Ignore // FIXME
+  @Test
   def WithComments {
     val sources = toScala[WithComments]
-    assertContains(sources, "javadocs", "// comments inside")
+    val javaCompilationUnit = getCompilationUnit(classOf[WithComments])
+    val allComments =
+      (findNodesOfType[BlockComment](javaCompilationUnit) ++
+        findNodesOfType[LineComment](javaCompilationUnit) ++
+        findNodesOfType[JavadocComment](javaCompilationUnit) ++
+        findNodesOfType[Node](javaCompilationUnit)
+          .flatMap(n => n.getAllContainedComments.asScala)).distinct
+    assertContains(sources, allComments.map(_.getContent): _*)
   }
 
   @Test

@@ -13,9 +13,9 @@
  */
 package com.mysema
 
-import japa.parser.ast.body._
-import japa.parser.ast.expr._
-import japa.parser.ast.stmt._
+import com.github.javaparser.ast.body._
+import com.github.javaparser.ast.expr._
+import com.github.javaparser.ast.stmt._
 import _root_.scala.collection.JavaConversions
 import _root_.scala.collection.Set
 
