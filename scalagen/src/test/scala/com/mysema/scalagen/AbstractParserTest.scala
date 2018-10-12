@@ -13,20 +13,21 @@
  */
 package com.mysema.scalagen
 
-import japa.parser.JavaParser
-import japa.parser.ParseException
-import japa.parser.ast.{CompilationUnit, ImportDeclaration}
+import com.github.javaparser.JavaParser
+import com.github.javaparser.ParseException
+import com.github.javaparser.ast.{CompilationUnit, ImportDeclaration}
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileNotFoundException
 import java.util.ArrayList
 import scala.collection.JavaConversions._
 import scala.reflect.ClassTag
+import TestDirectoryStructure._
 
 abstract class AbstractParserTest {
   
   def getCompilationUnit(cl: Class[_]): CompilationUnit = {
-    var file = new File("src/test/scala/" + cl.getName.replace('.', '/') + ".java")
+    var file = new File(s"$SCALA_TEST_DIR_NAME/${cl.getName.replace('.', '/')}.java")
     var in = new FileInputStream(file)
     val unit = JavaParser.parse(in)
     if (unit.getImports == null) {

@@ -14,7 +14,7 @@
 package com.mysema.scalagen
 
 import java.lang.reflect.Modifier
-import japa.parser.ast.body.ModifierSet
+import com.github.javaparser.ast.body.ModifierSet
 import _root_.scala.collection.JavaConversions
 import _root_.scala.collection.Set
 import java.util.ArrayList
@@ -99,6 +99,9 @@ trait Helpers {
     
   //@inline
   def isEmpty(col: JavaCollection[_]): Boolean = col == null || col.isEmpty
+
+  def nonEmptyOption[A](col: JavaCollection[A]): Option[JavaCollection[A]] =
+    if(!isEmpty(col)) Some(col) else None
   
   def getAssignment(s: Statement): Assign = s match {
     case Stmt(a: Assign) => a
@@ -163,7 +166,23 @@ trait Helpers {
   def isToString(n: Method): Boolean = n match {
     case Method("toString", Type.String, Nil, _) => true
     case _ => false
-  }  
-  
-      
+  }
+
+  implicit class RichIterator[T](iter: Iterator[T]) {
+
+    def takeUpToWhere(f: T => Boolean): Iterator[T] = new Iterator[T] {
+      var done = false
+
+      def next = {
+        if (done) throw new NoSuchElementException()
+        val n = iter.next;
+        done = f(n)
+        n
+      }
+
+      def hasNext = {
+        !done && iter.hasNext;
+      }
+    }
+  }
 }
